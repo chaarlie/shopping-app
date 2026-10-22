@@ -7,7 +7,7 @@ ARG SERVICE
 RUN test -n "$SERVICE"
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
     pnpm install --frozen-lockfile --filter "${SERVICE}..."
-RUN pnpm --filter "${SERVICE}" build
+RUN pnpm --filter "${SERVICE}..." build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
     pnpm --filter "${SERVICE}" deploy --legacy --prod /out
 
