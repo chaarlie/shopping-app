@@ -111,6 +111,9 @@ importers:
       oxlint:
         specifier: ^1.58.0
         version: 1.89.0(oxlint-tsgolint@7.0.2004)
+      oxlint-tsgolint:
+        specifier: ^7.0.2001
+        version: 7.0.2004
       prettier:
         specifier: ^3.4.2
         version: 3.9.10
