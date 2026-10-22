@@ -6,6 +6,14 @@ x-healthcheck: &healthcheck
   retries: 20
   start_period: 5s
 
+x-shop-api-build: &shop-api-build
+  context: .
+  dockerfile: backend/Dockerfile
+  args:
+    SERVICE: shop-api
+
+x-shop-database-url: &shop-database-url postgresql://shop:${SHOP_DB_PASSWORD:-shop}@postgres:5432/shop
+
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -32,16 +40,30 @@ services:
       - edge
 
   shop-api:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-      args:
-        SERVICE: shop-api
+    image: shopping-app/shop-api
+    build: *shop-api-build
+    environment:
+      DATABASE_URL: *shop-database-url
+    depends_on:
+      shop-api-migrate:
+        condition: service_completed_successfully
     healthcheck:
       <<: *healthcheck
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/health/ready"]
     networks:
       - edge
+      - backend
+
+  shop-api-migrate:
+    image: shopping-app/shop-api
+    build: *shop-api-build
+    command: ["node", "dist/database/migrate.js"]
+    environment:
+      DATABASE_URL: *shop-database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
       - backend
 
   payments-api:

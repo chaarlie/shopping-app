@@ -28,7 +28,7 @@ shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 
 ## Development
 
-Requirements: Node.js 24 and pnpm 10.28.
+Requirements: Node.js 24, pnpm 10.28 and Docker.
 
 ```sh
 pnpm install
@@ -38,4 +38,9 @@ pnpm -r test
 pnpm --filter shop-api --filter payments-api test:e2e
 ```
 
-To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both. `payments-api` also needs a `PAYMENTS_API_KEY` environment variable of at least 32 characters.
+The shop-api e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
+
+To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both.
+
+- `shop-api` needs `DATABASE_URL`, a Postgres connection URL. Apply migrations with `pnpm --filter shop-api build` followed by `pnpm --filter shop-api migration:run`.
+- `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters.
