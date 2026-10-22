@@ -24,6 +24,8 @@ shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 
 ## Design
 
+- [Architecture](docs/architecture.md): the containers, what each one can reach, and what is built so far.
+- [Product import](docs/product-import.md): how each CSV row is accepted, fixed or rejected.
 - [Checkout flow](docs/checkout-flow.md): how shop-api, payments-api and RabbitMQ settle a purchase, including declines, expired orders and late payments.
 
 ## Development
