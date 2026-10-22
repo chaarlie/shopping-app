@@ -34,11 +34,12 @@ Requirements: Node.js 24, pnpm 10.28 and Docker.
 pnpm install
 pnpm -r lint
 pnpm -r build
+pnpm -r typecheck
 pnpm -r test
 pnpm --filter shop-api --filter payments-api test:e2e
 ```
 
-The shop-api e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
+`typecheck` covers the tests as well as the source, and needs `build` first so the shared contracts are compiled. The shop-api e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
 
 To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both.
 

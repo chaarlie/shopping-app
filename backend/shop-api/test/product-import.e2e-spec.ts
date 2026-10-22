@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import request from 'supertest';
-import { App } from 'supertest/types';
+import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
 import { setupApp } from './../src/app.setup.js';

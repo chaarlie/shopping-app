@@ -18,6 +18,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r lint
       - run: pnpm -r build
+      - run: pnpm -r typecheck
       - run: pnpm -r test
       - run: pnpm --filter shop-api --filter payments-api test:e2e
 
@@ -27,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose up --build --detach --wait
-      - run: curl --fail --silent --show-error http://localhost:8080/api/health
+      - run: curl --fail --silent --show-error http://localhost:8080/api/health/ready
       - run: curl --fail --silent --show-error --output /dev/null http://localhost:8080/
       - if: failure()
         run: docker compose logs
