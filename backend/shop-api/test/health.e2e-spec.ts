@@ -3,8 +3,9 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
+import { setupApp } from './../src/app.setup.js';
 
-describe('AppController (e2e)', () => {
+describe('Health (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
@@ -12,15 +13,19 @@ describe('AppController (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = setupApp(moduleFixture.createNestApplication());
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it('/api/health (GET)', () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/api/health')
       .expect(200)
-      .expect('Hello World!');
+      .expect(({ body }) => expect(body.status).toBe('ok'));
+  });
+
+  it('serves routes only under /api', () => {
+    return request(app.getHttpServer()).get('/health').expect(404);
   });
 
   afterEach(async () => {
