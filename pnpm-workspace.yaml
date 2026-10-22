@@ -2,3 +2,7 @@ packages:
   - backend/*
   - packages/*
   - webapp
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
