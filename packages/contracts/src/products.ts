@@ -5,17 +5,47 @@ export const skuSchema = z
   .string()
   .trim()
   .toUpperCase()
+  .min(1, { error: 'SKU is required', abort: true })
   .regex(
     /^[A-Z0-9][A-Z0-9-]{0,31}$/,
     'SKU must be 1 to 32 letters, digits or hyphens',
   );
 
-const nameSchema = z.string().trim().min(1).max(200);
-const descriptionSchema = z.string().trim().max(2000);
-const categorySchema = z.string().trim().min(1).max(100);
-const priceCentsSchema = z.number().int().positive().max(100_000_000);
-const stockSchema = z.number().int().min(0).max(1_000_000);
-const weightGramsSchema = z.number().int().min(0).max(1_000_000).nullable();
+const nameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(200, 'Name must be at most 200 characters');
+
+const descriptionSchema = z
+  .string()
+  .trim()
+  .max(2000, 'Description must be at most 2000 characters');
+
+const categorySchema = z
+  .string()
+  .trim()
+  .min(1, 'Category is required')
+  .max(100, 'Category must be at most 100 characters');
+
+const priceCentsSchema = z
+  .number()
+  .int('Price must be a whole number of cents')
+  .positive('Price must be greater than 0')
+  .max(100_000_000, 'Price must be at most 1,000,000.00');
+
+const stockSchema = z
+  .number()
+  .int('Stock must be a whole number')
+  .min(0, 'Stock cannot be negative')
+  .max(1_000_000, 'Stock must be at most 1,000,000');
+
+const weightGramsSchema = z
+  .number()
+  .int('Weight must be a whole number of grams')
+  .min(0, 'Weight cannot be negative')
+  .max(1_000_000, 'Weight must be at most 1,000 kg')
+  .nullable();
 
 export const productSchema = z.object({
   id: z.number().int(),
