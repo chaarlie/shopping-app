@@ -22,6 +22,10 @@ It is stored unchanged at [`backend/Code Challenge E-Commerce.csv`](backend/Code
 shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 ```
 
+## Design
+
+- [Checkout flow](docs/checkout-flow.md): how shop-api, payments-api and RabbitMQ settle a purchase, including declines, expired orders and late payments.
+
 ## Development
 
 Requirements: Node.js 24 and pnpm 10.28.
