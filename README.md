@@ -28,6 +28,14 @@ shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 - [Product import](docs/product-import.md): how each CSV row is accepted, fixed or rejected.
 - [Checkout flow](docs/checkout-flow.md): how shop-api, payments-api and RabbitMQ settle a purchase, including declines, expired orders and late payments.
 
+## Decisions
+
+- **CSV import.** Rows that disagree about a SKU are rejected rather than guessed, products that already exist are updated, and stock is set rather than added, so importing the same file twice changes nothing. [Product import](docs/product-import.md#decisions) explains each choice and the alternatives.
+
+## Known issues
+
+[KNOWN_ISSUES.md](KNOWN_ISSUES.md) lists the problems found in the example CSV and how each one is handled, plus the known bugs and limitations of this solution.
+
 ## Development
 
 Requirements: Node.js 24, pnpm 10.28 and Docker.

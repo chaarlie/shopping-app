@@ -1,0 +1,35 @@
+# Known issues
+
+This file lists the problems found in the example CSV and the known bugs and limitations of this solution. Each entry says what happens today.
+
+## Problems in the example CSV
+
+The example file has rows that look deliberately broken. The import handles each one as shown below, and [Product import](docs/product-import.md) explains the rules and the reasons behind them. Row numbers count the header as row 1, as a spreadsheet does, and [`plan-product-import.spec.ts`](backend/shop-api/src/products/import/plan-product-import.spec.ts) checks every row listed here.
+
+| Rows | SKU | Problem | Result |
+|---|---|---|---|
+| 2, 36 | RS-001 | Two "Running Shoes" rows with different descriptions, prices and stock | Both rows rejected |
+| 11, 56, 89 | BS-021 | Row 56 has a different description, price, stock and weight; row 89 repeats row 11 | All three rows rejected |
+| 7 | YM-015 | Price is `free` | Rejected |
+| 16 | DL-007 | Stock is `-5` | Rejected |
+| 25 | HD-099 | Name is blank | Rejected |
+| 41 | WS-001 | Name is only spaces | Rejected |
+| 47 | MB-001 | Price is `0.00` | Rejected |
+| 4 | WM-042 | Price is `$29.99` | Imported at 29.99, with a warning |
+| 50 | GK-088 | Weight is blank | Imported without a weight, with a warning |
+| 52 | GC-025 | Category is blank, weight is `0` and stock is 99999 | Imported as Uncategorized, with a warning |
+| 20 | XS-001 | Name is `<script>alert('xss')</script>` | Imported, with the name stored as text |
+| 29 | SQL-001 | Name is `Robert'); DROP TABLE products;--` | Imported, with the name stored as text |
+| 53 | CI-001 | Name contains a comma | Imported as written |
+| 59 | QI-001 | Name contains double quotes | Imported as written |
+| 31 | WB-033 | Description contains `—` and `™` | Imported as written |
+| 51 | VC-001 | Stock is 0 | Imported as out of stock |
+| 55, 68 | RS-050, BS-099 | Same names as RS-001 and BS-021 | Imported as separate products, because the SKU identifies a product |
+| 62, 63 | | Blank rows | Skipped and counted |
+
+That adds up to 85 products imported, 10 rows rejected and 2 blank rows skipped. To bring in the rejected rows, fix them and import the whole file again: the 85 products already imported are reported as unchanged.
+
+## Known bugs and limitations
+
+- **No sign-in yet.** Anyone who can reach the API can create, update, delete and import products. Admin sign-in is the next piece of work.
+- **An import can fail with a 500 when another write adds the same new SKU.** If another import or a create request adds a SKU while an import that also adds it is running, the import waits, then hits the unique constraint on the SKU, and that error isn't turned into a 409. Nothing is half-written, because the import runs in a single transaction, and running it again succeeds.
