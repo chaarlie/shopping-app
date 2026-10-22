@@ -23,4 +23,8 @@ export abstract class ProductRepository extends GenericRepository<
     version: number,
     changes: ProductChanges,
   ): Promise<ProductEntity | null>;
+
+  abstract findBySkusForUpdate(skus: string[]): Promise<ProductEntity[]>;
+
+  abstract createMany(products: NewProduct[]): Promise<void>;
 }

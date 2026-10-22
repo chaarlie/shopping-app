@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreateProductCommandHandler } from './commands/handlers/create-product-command.handler.js';
 import { DeleteProductCommandHandler } from './commands/handlers/delete-product-command.handler.js';
+import { ImportProductsCommandHandler } from './commands/handlers/import-products-command.handler.js';
 import { UpdateProductCommandHandler } from './commands/handlers/update-product-command.handler.js';
+import { ProductsImportController } from './controllers/products-import.controller.js';
 import { ProductsRestController } from './controllers/products-rest.controller.js';
 import { ProductEntity } from './entities/product.entity.js';
 import { GetProductQueryHandler } from './queries/handlers/get-product-query.handler.js';
@@ -12,7 +14,7 @@ import { TypeOrmProductRepository } from './repositories/typeorm-product.reposit
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity])],
-  controllers: [ProductsRestController],
+  controllers: [ProductsImportController, ProductsRestController],
   providers: [
     {
       provide: ProductRepository,
@@ -21,6 +23,7 @@ import { TypeOrmProductRepository } from './repositories/typeorm-product.reposit
     CreateProductCommandHandler,
     UpdateProductCommandHandler,
     DeleteProductCommandHandler,
+    ImportProductsCommandHandler,
     GetProductQueryHandler,
     ListProductsQueryHandler,
   ],

@@ -32,4 +32,30 @@ export class TypeOrmProductRepository
 
     return affected === 1 ? this.findById(id) : null;
   }
+
+  async findBySkusForUpdate(skus: string[]): Promise<ProductEntity[]> {
+    if (skus.length === 0) {
+      return [];
+    }
+
+    return this.repository
+      .createQueryBuilder('product')
+      .where('product.sku IN (:...skus)', { skus })
+      .orderBy('product.id', 'ASC')
+      .setLock('pessimistic_write')
+      .getMany();
+  }
+
+  async createMany(products: NewProduct[]): Promise<void> {
+    if (products.length === 0) {
+      return;
+    }
+
+    await this.repository
+      .createQueryBuilder()
+      .insert()
+      .into(ProductEntity)
+      .values(products)
+      .execute();
+  }
 }

@@ -5,16 +5,27 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ConflictError, NotFoundError } from '../errors.js';
+import { ConflictError, NotFoundError, ValidationError } from '../errors.js';
 
-@Catch(NotFoundError, ConflictError)
+type DomainError = NotFoundError | ConflictError | ValidationError;
+
+const statusFor = (exception: DomainError): [HttpStatus, string] => {
+  if (exception instanceof NotFoundError) {
+    return [HttpStatus.NOT_FOUND, 'Not Found'];
+  }
+
+  if (exception instanceof ConflictError) {
+    return [HttpStatus.CONFLICT, 'Conflict'];
+  }
+
+  return [HttpStatus.BAD_REQUEST, 'Bad Request'];
+};
+
+@Catch(NotFoundError, ConflictError, ValidationError)
 export class DomainExceptionFilter implements ExceptionFilter {
-  catch(exception: NotFoundError | ConflictError, host: ArgumentsHost) {
+  catch(exception: DomainError, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
-    const [statusCode, error] =
-      exception instanceof NotFoundError
-        ? [HttpStatus.NOT_FOUND, 'Not Found']
-        : [HttpStatus.CONFLICT, 'Conflict'];
+    const [statusCode, error] = statusFor(exception);
 
     response.status(statusCode).json({
       statusCode,
