@@ -14,6 +14,8 @@ import { OrderLineEntity } from './entities/order-line.entity.js';
 import { OrderEntity } from './entities/order.entity.js';
 import { PaymentAttemptEntity } from './entities/payment-attempt.entity.js';
 import { ProcessedPaymentEventEntity } from './entities/processed-payment-event.entity.js';
+import { OrderEventStream } from './live/order-event-stream.js';
+import { OrderUpdatesListener } from './live/order-updates.listener.js';
 import { OrderUpdatesPublisher } from './order-updates.publisher.js';
 import { HttpPaymentsGateway } from './payments/http-payments-gateway.js';
 import { PaymentAttemptSubmitter } from './payments/payment-attempt-submitter.js';
@@ -52,6 +54,8 @@ import { TypeOrmProcessedPaymentEventRepository } from './repositories/typeorm-p
     OrderAccessGuard,
     PaymentWebhookSignatureGuard,
     OrderUpdatesPublisher,
+    OrderUpdatesListener,
+    OrderEventStream,
     PaymentAttemptSubmitter,
     PlaceOrderCommandHandler,
     StartPaymentAttemptCommandHandler,

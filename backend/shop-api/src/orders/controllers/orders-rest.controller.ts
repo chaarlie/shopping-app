@@ -4,9 +4,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  MessageEvent,
   Param,
   Post,
   Res,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -21,12 +23,14 @@ import type {
   RetryPaymentInput,
 } from '@shop/contracts';
 import type { Response } from 'express';
+import { Observable } from 'rxjs';
 import { IdempotencyKey } from '../../common/decorators/idempotency-key.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { OrderAccess } from '../access/order-access.js';
 import { OrderAccessGuard } from '../access/order-access.guard.js';
 import { PlaceOrderCommand } from '../commands/place-order.command.js';
 import { StartPaymentAttemptCommand } from '../commands/start-payment-attempt.command.js';
+import { OrderEventStream } from '../live/order-event-stream.js';
 import { PaymentAttemptSubmitter } from '../payments/payment-attempt-submitter.js';
 import { GetOrderQuery } from '../queries/get-order.query.js';
 
@@ -37,6 +41,7 @@ export class OrdersRestController {
     private readonly queryBus: QueryBus,
     private readonly access: OrderAccess,
     private readonly submitter: PaymentAttemptSubmitter,
+    private readonly stream: OrderEventStream,
   ) {}
 
   @Post()
@@ -62,6 +67,15 @@ export class OrdersRestController {
     reference: string,
   ): Promise<Order> {
     return this.queryBus.execute(new GetOrderQuery(reference));
+  }
+
+  @Sse(':reference/events')
+  @UseGuards(OrderAccessGuard)
+  events(
+    @Param('reference', new ZodValidationPipe(orderReferenceSchema))
+    reference: string,
+  ): Observable<MessageEvent> {
+    return this.stream.open(reference);
   }
 
   @Post(':reference/payments')
