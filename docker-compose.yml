@@ -95,17 +95,6 @@ services:
     networks:
       - backend
 
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-shop}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-shop}
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-    networks:
-      - backend
-
 networks:
   edge:
   backend:

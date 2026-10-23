@@ -26,11 +26,12 @@ shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 
 - [Architecture](docs/architecture.md): the containers, what each one can reach, and what is built so far.
 - [Product import](docs/product-import.md): how each CSV row is accepted, fixed or rejected.
-- [Checkout flow](docs/checkout-flow.md): how shop-api, payments-api and RabbitMQ settle a purchase, including declines, expired orders and late payments.
+- [Checkout flow](docs/checkout-flow.md): how shop-api and payments-api settle a purchase with signed webhooks and live updates, including declines, expired orders and late payments.
 
 ## Decisions
 
 - **CSV import.** Rows that disagree about a SKU are rejected rather than guessed, products that already exist are updated, and stock is set rather than added, so importing the same file twice changes nothing. [Product import](docs/product-import.md#decisions) explains each choice and the alternatives.
+- **Payment results.** payments-api reports each payment to shop-api as a signed webhook, sent from an outbox that retries until shop-api confirms, the way a payment gateway reports to a merchant. RabbitMQ between the services was the alternative. [Checkout flow](docs/checkout-flow.md#decisions) explains the choice.
 
 ## Known issues
 
