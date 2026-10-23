@@ -5,9 +5,7 @@ import { ProductRepository } from '../../repositories/product.repository.js';
 import { DeleteProductCommand } from '../delete-product.command.js';
 
 @CommandHandler(DeleteProductCommand)
-export class DeleteProductCommandHandler
-  implements ICommandHandler<DeleteProductCommand>
-{
+export class DeleteProductCommandHandler implements ICommandHandler<DeleteProductCommand> {
   constructor(private readonly products: ProductRepository) {}
 
   @Transactional()

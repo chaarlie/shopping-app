@@ -6,9 +6,7 @@ import { ProductRepository } from '../../repositories/product.repository.js';
 import { UpdateProductCommand } from '../update-product.command.js';
 
 @CommandHandler(UpdateProductCommand)
-export class UpdateProductCommandHandler
-  implements ICommandHandler<UpdateProductCommand>
-{
+export class UpdateProductCommandHandler implements ICommandHandler<UpdateProductCommand> {
   constructor(private readonly products: ProductRepository) {}
 
   @Transactional()

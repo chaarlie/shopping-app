@@ -31,7 +31,7 @@ describe('Products (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query('TRUNCATE products RESTART IDENTITY');
+    await dataSource.query('TRUNCATE products RESTART IDENTITY CASCADE');
   });
 
   afterAll(async () => {
@@ -133,7 +133,11 @@ describe('Products (e2e)', () => {
       .send({ stock: 120, version: 1 })
       .expect(200);
 
-    expect(body).toMatchObject({ stock: 120, version: 2, name: 'Running Shoes' });
+    expect(body).toMatchObject({
+      stock: 120,
+      version: 2,
+      name: 'Running Shoes',
+    });
   });
 
   it('rejects an update based on an old version', async () => {

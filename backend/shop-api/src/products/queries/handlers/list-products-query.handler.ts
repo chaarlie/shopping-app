@@ -7,9 +7,7 @@ import { toProduct } from '../../product.mapper.js';
 import { ListProductsQuery } from '../list-products.query.js';
 
 @QueryHandler(ListProductsQuery)
-export class ListProductsQueryHandler
-  implements IQueryHandler<ListProductsQuery>
-{
+export class ListProductsQueryHandler implements IQueryHandler<ListProductsQuery> {
   constructor(
     private readonly txHost: TransactionHost<TransactionalAdapterTypeOrm>,
   ) {}

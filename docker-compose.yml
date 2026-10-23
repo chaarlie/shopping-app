@@ -14,6 +14,18 @@ x-shop-api-build: &shop-api-build
 
 x-shop-database-url: &shop-database-url postgresql://shop:${SHOP_DB_PASSWORD:-shop}@postgres:5432/shop
 
+x-payments-api-build: &payments-api-build
+  context: .
+  dockerfile: backend/Dockerfile
+  args:
+    SERVICE: payments-api
+
+x-payments-database-url: &payments-database-url postgresql://payments:${PAYMENTS_DB_PASSWORD:-payments}@postgres:5432/payments
+
+x-payment-webhook-secret: &payment-webhook-secret ${PAYMENT_WEBHOOK_SECRET:-whsec_bG9jYWwtb25seS13ZWJob29rLWtleS1jaGFuZ2UtbWUh}
+
+x-payments-api-key: &payments-api-key ${PAYMENTS_API_KEY:-local-only-payments-api-key-change-me}
+
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -44,9 +56,16 @@ services:
     build: *shop-api-build
     environment:
       DATABASE_URL: *shop-database-url
+      PAYMENTS_API_URL: http://payments-api:3000
+      PAYMENTS_API_KEY: *payments-api-key
+      PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
+      ORDER_ACCESS_SECRET: ${ORDER_ACCESS_SECRET:-local-only-order-access-secret-change-me}
+      ORDER_COOKIE_SECURE: "false"
     depends_on:
       shop-api-migrate:
         condition: service_completed_successfully
+      payments-api:
+        condition: service_healthy
     healthcheck:
       <<: *healthcheck
       test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/health/ready"]
@@ -67,16 +86,31 @@ services:
       - backend
 
   payments-api:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-      args:
-        SERVICE: payments-api
+    image: shopping-app/payments-api
+    build: *payments-api-build
     environment:
-      PAYMENTS_API_KEY: ${PAYMENTS_API_KEY:-local-only-payments-api-key-change-me}
+      DATABASE_URL: *payments-database-url
+      PAYMENTS_API_KEY: *payments-api-key
+      PAYMENT_WEBHOOK_URL: http://shop-api:3000/webhooks/payments
+      PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
+    depends_on:
+      payments-api-migrate:
+        condition: service_completed_successfully
     healthcheck:
       <<: *healthcheck
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health"]
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health/ready"]
+    networks:
+      - backend
+
+  payments-api-migrate:
+    image: shopping-app/payments-api
+    build: *payments-api-build
+    command: ["node", "dist/database/migrate.js"]
+    environment:
+      DATABASE_URL: *payments-database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - backend
 
@@ -92,17 +126,6 @@ services:
     healthcheck:
       <<: *healthcheck
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-    networks:
-      - backend
-
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-shop}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-shop}
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
     networks:
       - backend
 

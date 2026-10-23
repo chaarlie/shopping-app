@@ -107,7 +107,10 @@ function parsePriceCents(raw: string, warnings: string[]): Parsed<number> {
   }
 
   const [, whole, fraction = ''] = match;
-  return { ok: true, value: Number(whole) * 100 + Number(fraction.padEnd(2, '0')) };
+  return {
+    ok: true,
+    value: Number(whole) * 100 + Number(fraction.padEnd(2, '0')),
+  };
 }
 
 function parseStock(raw: string): Parsed<number> {

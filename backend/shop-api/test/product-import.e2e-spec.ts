@@ -30,7 +30,7 @@ describe('Product import (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query('TRUNCATE products RESTART IDENTITY');
+    await dataSource.query('TRUNCATE products RESTART IDENTITY CASCADE');
   });
 
   afterAll(async () => {

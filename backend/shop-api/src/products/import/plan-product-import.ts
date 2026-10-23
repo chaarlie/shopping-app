@@ -1,6 +1,10 @@
 import { CreateProductInput } from '@shop/contracts';
 import { normalizeProductRow } from './normalize-product-row.js';
-import { parseProductCsv, ProductCsvRecord, ProductCsvValues } from './product-csv.js';
+import {
+  parseProductCsv,
+  ProductCsvRecord,
+  ProductCsvValues,
+} from './product-csv.js';
 
 export interface PlannedProductRow {
   row: number;

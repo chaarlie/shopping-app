@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { validateEnv } from '../config/env.schema.js';
+import { validateMigrationEnv } from '../config/env.schema.js';
 import { runMigrations } from './run-migrations.js';
 
 const logger = new Logger('Migrations');
-const { DATABASE_URL } = validateEnv(process.env);
+const { DATABASE_URL } = validateMigrationEnv(process.env);
 const applied = await runMigrations(DATABASE_URL);
 
 logger.log(

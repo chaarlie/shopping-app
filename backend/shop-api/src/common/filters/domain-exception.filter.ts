@@ -5,9 +5,15 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ConflictError, NotFoundError, ValidationError } from '../errors.js';
+import {
+  ConflictError,
+  IdempotencyKeyReusedError,
+  NotFoundError,
+  ValidationError,
+} from '../errors.js';
 
-type DomainError = NotFoundError | ConflictError | ValidationError;
+type DomainError =
+  NotFoundError | ConflictError | ValidationError | IdempotencyKeyReusedError;
 
 const statusFor = (exception: DomainError): [HttpStatus, string] => {
   if (exception instanceof NotFoundError) {
@@ -18,10 +24,14 @@ const statusFor = (exception: DomainError): [HttpStatus, string] => {
     return [HttpStatus.CONFLICT, 'Conflict'];
   }
 
+  if (exception instanceof IdempotencyKeyReusedError) {
+    return [HttpStatus.UNPROCESSABLE_ENTITY, 'Unprocessable Entity'];
+  }
+
   return [HttpStatus.BAD_REQUEST, 'Bad Request'];
 };
 
-@Catch(NotFoundError, ConflictError, ValidationError)
+@Catch(NotFoundError, ConflictError, ValidationError, IdempotencyKeyReusedError)
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: DomainError, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
