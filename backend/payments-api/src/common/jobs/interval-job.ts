@@ -7,7 +7,7 @@ import {
 export abstract class IntervalJob
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
-  private readonly logger = new Logger(this.constructor.name);
+  protected readonly logger = new Logger(this.constructor.name);
   private timer?: NodeJS.Timeout;
   private running?: Promise<void>;
 

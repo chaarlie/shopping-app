@@ -2,23 +2,29 @@ import { validateEnv, validateMigrationEnv } from './env.schema.js';
 
 const apiKey = 'a'.repeat(32);
 const databaseUrl = 'postgresql://payments:secret@localhost:5432/payments';
-const required = { PAYMENTS_API_KEY: apiKey, DATABASE_URL: databaseUrl };
+const webhookUrl = 'http://shop-api:3000/webhooks/payments';
+const webhookSecret = 'w'.repeat(32);
+const required = {
+  PAYMENTS_API_KEY: apiKey,
+  DATABASE_URL: databaseUrl,
+  PAYMENT_WEBHOOK_URL: webhookUrl,
+  PAYMENT_WEBHOOK_SECRET: webhookSecret,
+};
 
 describe('validateEnv', () => {
   it('fills in the defaults', () => {
     expect(validateEnv(required)).toEqual({
+      ...required,
       PORT: 3000,
-      PAYMENTS_API_KEY: apiKey,
-      DATABASE_URL: databaseUrl,
       PAYMENT_SETTLE_DELAY_MS: 2000,
       BACKGROUND_JOBS: 'on',
     });
   });
 
   it('rejects a missing API key', () => {
-    expect(() => validateEnv({ DATABASE_URL: databaseUrl })).toThrow(
-      'Invalid environment variables',
-    );
+    expect(() =>
+      validateEnv({ ...required, PAYMENTS_API_KEY: undefined }),
+    ).toThrow('Invalid environment variables');
   });
 
   it('rejects a short API key', () => {
@@ -33,6 +39,18 @@ describe('validateEnv', () => {
         ...required,
         DATABASE_URL: 'mysql://payments@db/payments',
       }),
+    ).toThrow('Invalid environment variables');
+  });
+
+  it('requires an HTTP URL for the webhook receiver', () => {
+    expect(() =>
+      validateEnv({ ...required, PAYMENT_WEBHOOK_URL: 'ftp://shop-api/hooks' }),
+    ).toThrow('Invalid environment variables');
+  });
+
+  it('rejects a short webhook secret', () => {
+    expect(() =>
+      validateEnv({ ...required, PAYMENT_WEBHOOK_SECRET: 'short' }),
     ).toThrow('Invalid environment variables');
   });
 

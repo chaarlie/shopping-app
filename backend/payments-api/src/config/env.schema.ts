@@ -4,6 +4,8 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   PAYMENTS_API_KEY: z.string().min(32),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  PAYMENT_WEBHOOK_URL: z.url({ protocol: /^https?$/ }),
+  PAYMENT_WEBHOOK_SECRET: z.string().min(32),
   PAYMENT_SETTLE_DELAY_MS: z.coerce
     .number()
     .int()

@@ -22,6 +22,8 @@ x-payments-api-build: &payments-api-build
 
 x-payments-database-url: &payments-database-url postgresql://payments:${PAYMENTS_DB_PASSWORD:-payments}@postgres:5432/payments
 
+x-payment-webhook-secret: &payment-webhook-secret ${PAYMENT_WEBHOOK_SECRET:-local-only-payment-webhook-secret-change-me}
+
 services:
   nginx:
     image: nginx:1.27-alpine
@@ -80,6 +82,8 @@ services:
     environment:
       DATABASE_URL: *payments-database-url
       PAYMENTS_API_KEY: ${PAYMENTS_API_KEY:-local-only-payments-api-key-change-me}
+      PAYMENT_WEBHOOK_URL: http://shop-api:3000/webhooks/payments
+      PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
     depends_on:
       payments-api-migrate:
         condition: service_completed_successfully

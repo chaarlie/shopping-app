@@ -24,4 +24,69 @@ export class TypeOrmOutboxEventRepository implements OutboxEventRepository {
       nextAttemptAt: new Date(),
     });
   }
+
+  async claimDue(limit: number, leaseMs: number): Promise<OutboxEventEntity[]> {
+    const now = new Date();
+    const due = await this.repository
+      .createQueryBuilder('event')
+      .where('event.deliveredAt IS NULL')
+      .andWhere('event.deadAt IS NULL')
+      .andWhere('event.nextAttemptAt <= :now', { now })
+      .andWhere('(event.lockedUntil IS NULL OR event.lockedUntil < :now)', {
+        now,
+      })
+      .orderBy('event.nextAttemptAt', 'ASC')
+      .limit(limit)
+      .setLock('pessimistic_write')
+      .setOnLocked('skip_locked')
+      .getMany();
+
+    if (due.length === 0) {
+      return [];
+    }
+
+    const lockedUntil = new Date(now.getTime() + leaseMs);
+    await this.repository.update(
+      due.map((event) => event.id),
+      { lockedUntil },
+    );
+
+    for (const event of due) {
+      event.lockedUntil = lockedUntil;
+    }
+
+    return due;
+  }
+
+  async markDelivered(id: string, attempts: number): Promise<void> {
+    await this.repository.update(id, {
+      attempts,
+      deliveredAt: new Date(),
+      lockedUntil: null,
+      lastError: null,
+    });
+  }
+
+  async scheduleRetry(
+    id: string,
+    attempts: number,
+    nextAttemptAt: Date,
+    error: string,
+  ): Promise<void> {
+    await this.repository.update(id, {
+      attempts,
+      nextAttemptAt,
+      lockedUntil: null,
+      lastError: error,
+    });
+  }
+
+  async markDead(id: string, attempts: number, error: string): Promise<void> {
+    await this.repository.update(id, {
+      attempts,
+      deadAt: new Date(),
+      lockedUntil: null,
+      lastError: error,
+    });
+  }
 }

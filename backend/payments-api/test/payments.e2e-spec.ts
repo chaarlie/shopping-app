@@ -36,7 +36,9 @@ describe('Payments (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query('TRUNCATE payments, outbox_events');
+    await dataSource.query(
+      'TRUNCATE payments, outbox_events, webhook_deliveries',
+    );
   });
 
   afterAll(async () => {
