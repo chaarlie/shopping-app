@@ -84,10 +84,10 @@ To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm
 
 ## Webhook authentication
 
-Payment results use [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks), through the pinned `standardwebhooks` 1.1.1 reference library. Both services must use the same `PAYMENT_WEBHOOK_SECRET`: `whsec_` followed by canonical base64 encoding of 24 to 64 random bytes. Generate a 32-byte key with:
+Payment webhooks follow [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks), and are signed and checked by its reference library, `standardwebhooks` 1.1.1. Both services need the same `PAYMENT_WEBHOOK_SECRET`: `whsec_` followed by 24 to 64 random bytes in base64. To make one:
 
 ```sh
 node -e "console.log('whsec_' + require('node:crypto').randomBytes(32).toString('base64'))"
 ```
 
-Compose provides a public local-development key. Set your own secret for a deployment. Upgrade both APIs together: the former literal-string secret and `X-Signature` format are incompatible. No database migration is needed; queued events receive the new headers when delivered. [Checkout flow](docs/checkout-flow.md) describes authentication, retries and recovery limits.
+The key in `docker-compose.yml` is for local use only, so set your own for any deployment. [Checkout flow](docs/checkout-flow.md#2-delivering-a-result-the-webhook) explains how the signature, the retries and the reconciliation job fit together.
