@@ -34,9 +34,7 @@ export abstract class TypeOrmGenericRepository<
   }
 
   create(data: TCreate): Promise<T> {
-    return this.repository.save(
-      this.repository.create(data as DeepPartial<T>),
-    );
+    return this.repository.save(this.repository.create(data as DeepPartial<T>));
   }
 
   async update(id: number, changes: Partial<TCreate>): Promise<T | null> {

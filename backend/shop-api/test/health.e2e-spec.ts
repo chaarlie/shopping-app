@@ -28,9 +28,7 @@ describe('Health (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/health/ready')
       .expect(200)
-      .expect(({ body }) =>
-        expect(body.details.database.status).toBe('up'),
-      );
+      .expect(({ body }) => expect(body.details.database.status).toBe('up'));
   });
 
   it('serves routes only under /api', () => {

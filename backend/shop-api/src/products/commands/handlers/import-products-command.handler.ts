@@ -17,9 +17,7 @@ import { ProductRepository } from '../../repositories/product.repository.js';
 import { ImportProductsCommand } from '../import-products.command.js';
 
 @CommandHandler(ImportProductsCommand)
-export class ImportProductsCommandHandler
-  implements ICommandHandler<ImportProductsCommand>
-{
+export class ImportProductsCommandHandler implements ICommandHandler<ImportProductsCommand> {
   constructor(private readonly products: ProductRepository) {}
 
   @Transactional()

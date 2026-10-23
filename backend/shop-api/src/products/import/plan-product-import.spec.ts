@@ -125,7 +125,9 @@ describe('planProductImport edge cases', () => {
 
     expect(rowOf(result, 2).status).toBe('ready');
     expect(rowOf(result, 3).status).toBe('duplicate');
-    expect(rowOf(result, 3).warnings).toEqual(['Same as row 2, so it was skipped']);
+    expect(rowOf(result, 3).warnings).toEqual([
+      'Same as row 2, so it was skipped',
+    ]);
   });
 
   it('reports every problem in a row, in column order', () => {
@@ -154,7 +156,10 @@ describe('planProductImport edge cases', () => {
     );
 
     expect(result.ignoredColumns).toEqual(['colour']);
-    expect(rowOf(result, 2).product).toMatchObject({ sku: 'MG-1', name: 'Mug' });
+    expect(rowOf(result, 2).product).toMatchObject({
+      sku: 'MG-1',
+      name: 'Mug',
+    });
   });
 
   it('reads a file that starts with a byte order mark', () => {

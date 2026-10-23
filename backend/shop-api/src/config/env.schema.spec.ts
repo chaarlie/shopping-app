@@ -11,9 +11,9 @@ describe('validateEnv', () => {
   });
 
   it('reads the port from a string', () => {
-    expect(
-      validateEnv({ PORT: '8080', DATABASE_URL: databaseUrl }).PORT,
-    ).toBe(8080);
+    expect(validateEnv({ PORT: '8080', DATABASE_URL: databaseUrl }).PORT).toBe(
+      8080,
+    );
   });
 
   it('rejects a port that is not a number', () => {
