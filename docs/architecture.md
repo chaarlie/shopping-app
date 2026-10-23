@@ -20,7 +20,7 @@ flowchart LR
     paymentsMigrate -->|"applies migrations"| postgres
     shop -->|"TypeORM, shop database only"| postgres
     payments -->|"TypeORM, payments database only"| postgres
-    shop -.->|"planned: payment requests, with the service key"| payments
+    shop -->|"payment requests, with the service key"| payments
     payments -.->|"planned: signed webhooks with the results"| shop
 ```
 
@@ -29,4 +29,4 @@ flowchart LR
 - **Each service has its own database and role.** Neither role can connect to the other service's database.
 - **Migrations run before each API starts.** `shop-api-migrate` and `payments-api-migrate` apply them and exit, and each API starts only after its runner succeeds. TypeORM's `synchronize` is off.
 - **The health checks include the database.** The container checks call shop-api's `/api/health/ready` and payments-api's `/health/ready`, which ping Postgres.
-- **The two services will talk over HTTP in both directions.** shop-api asks payments-api for payments with the service key. payments-api reports each result by posting a signed event to shop-api's `/webhooks/payments`, a route outside `/api` that nginx never forwards. [Checkout flow](checkout-flow.md) has the details.
+- **The two services talk over HTTP in both directions.** shop-api asks payments-api for payments with the service key. payments-api will report each result by posting a signed event to shop-api's `/webhooks/payments`, a route outside `/api` that nginx never forwards. [Checkout flow](checkout-flow.md) has the details.

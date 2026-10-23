@@ -46,6 +46,30 @@ export class TypeOrmProductRepository
       .getMany();
   }
 
+  async findByIdsForUpdate(ids: number[]): Promise<ProductEntity[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.repository
+      .createQueryBuilder('product')
+      .where('product.id IN (:...ids)', { ids })
+      .orderBy('product.id', 'ASC')
+      .setLock('pessimistic_write')
+      .getMany();
+  }
+
+  async changeStock(id: number, delta: number): Promise<boolean> {
+    const { affected } = await this.repository
+      .createQueryBuilder()
+      .update(ProductEntity)
+      .set({ stock: () => 'stock + :delta' })
+      .where('id = :id AND stock + :delta >= 0', { id, delta })
+      .execute();
+
+    return affected === 1;
+  }
+
   async createMany(products: NewProduct[]): Promise<void> {
     if (products.length === 0) {
       return;

@@ -6,6 +6,7 @@ import { DomainExceptionFilter } from './common/filters/domain-exception.filter.
 import { validateEnv } from './config/env.schema.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { OrdersModule } from './orders/orders.module.js';
 import { ProductsModule } from './products/products.module.js';
 
 @Module({
@@ -18,6 +19,7 @@ import { ProductsModule } from './products/products.module.js';
     DatabaseModule,
     HealthModule,
     ProductsModule,
+    OrdersModule,
   ],
   providers: [
     {

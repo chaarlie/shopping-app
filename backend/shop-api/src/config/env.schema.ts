@@ -3,12 +3,35 @@ import { z } from 'zod';
 export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  PAYMENTS_API_URL: z.url({ protocol: /^https?$/ }),
+  PAYMENTS_API_KEY: z.string().min(32),
+  ORDER_ACCESS_SECRET: z.string().min(32),
+  ORDER_COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  BACKGROUND_JOBS: z.enum(['on', 'off']).default('on'),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
+const migrationEnvSchema = envSchema.pick({ DATABASE_URL: true });
+
 export function validateEnv(config: Record<string, unknown>): Env {
-  const result = envSchema.safeParse(config);
+  return parse(envSchema, config);
+}
+
+export function validateMigrationEnv(
+  config: Record<string, unknown>,
+): z.infer<typeof migrationEnvSchema> {
+  return parse(migrationEnvSchema, config);
+}
+
+function parse<T extends z.ZodType>(
+  schema: T,
+  config: Record<string, unknown>,
+): z.output<T> {
+  const result = schema.safeParse(config);
 
   if (!result.success) {
     throw new Error(
