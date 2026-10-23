@@ -5,6 +5,7 @@ const required = {
   DATABASE_URL: databaseUrl,
   PAYMENTS_API_URL: 'http://payments-api:3000',
   PAYMENTS_API_KEY: 'k'.repeat(32),
+  PAYMENT_WEBHOOK_SECRET: 'w'.repeat(32),
   ORDER_ACCESS_SECRET: 's'.repeat(32),
 };
 

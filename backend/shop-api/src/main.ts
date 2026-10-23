@@ -6,7 +6,7 @@ import { setupApp } from './app.setup.js';
 import { Env } from './config/env.schema.js';
 
 async function bootstrap() {
-  const app = setupApp(await NestFactory.create(AppModule));
+  const app = setupApp(await NestFactory.create(AppModule, { rawBody: true }));
   app.enableShutdownHooks();
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);

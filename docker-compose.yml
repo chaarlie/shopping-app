@@ -58,6 +58,7 @@ services:
       DATABASE_URL: *shop-database-url
       PAYMENTS_API_URL: http://payments-api:3000
       PAYMENTS_API_KEY: *payments-api-key
+      PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
       ORDER_ACCESS_SECRET: ${ORDER_ACCESS_SECRET:-local-only-order-access-secret-change-me}
       ORDER_COOKIE_SECURE: "false"
     depends_on:

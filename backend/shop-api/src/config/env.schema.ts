@@ -5,6 +5,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   PAYMENTS_API_URL: z.url({ protocol: /^https?$/ }),
   PAYMENTS_API_KEY: z.string().min(32),
+  PAYMENT_WEBHOOK_SECRET: z.string().min(32),
   ORDER_ACCESS_SECRET: z.string().min(32),
   ORDER_COOKIE_SECURE: z
     .enum(['true', 'false'])
