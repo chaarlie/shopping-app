@@ -50,9 +50,9 @@ pnpm -r test
 pnpm --filter shop-api --filter payments-api test:e2e
 ```
 
-`typecheck` covers the tests as well as the source, and needs `build` first so the shared contracts are compiled. The shop-api e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
+`typecheck` covers the tests as well as the source, and needs `build` first so the shared packages are compiled. Both services' e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
 
 To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both.
 
 - `shop-api` needs `DATABASE_URL`, a Postgres connection URL. Apply migrations with `pnpm --filter shop-api build` followed by `pnpm --filter shop-api migration:run`.
-- `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters.
+- `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters, and `DATABASE_URL` for its own database. Apply its migrations the same way, with `pnpm --filter payments-api migration:run`. `PAYMENT_SETTLE_DELAY_MS` sets how long the simulated card provider takes to answer (2000 by default), and `BACKGROUND_JOBS=off` stops its workers, which the e2e tests use to run them step by step.

@@ -1,6 +1,8 @@
 # Checkout flow
 
-This is the design the checkout is being built to. It is not implemented yet, and this page will change in the same commits as the code.
+This is the design the checkout is being built to, and this page changes in the same commits as the code.
+
+**Built so far:** payments-api takes payments with test cards and idempotency keys, allows one active payment per order, settles each payment through the simulated card provider, writes every result to its outbox in the same transaction, and refunds succeeded payments. Sending the outbox as webhooks, and everything in shop-api, is not built yet.
 
 payments-api plays the part of a payment gateway, and shop-api is the merchant. Requests go one way: shop-api asks payments-api to charge a card. Results come back the other way as signed webhooks, which is how gateways such as Stripe and Adyen report payments to merchants.
 
