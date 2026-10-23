@@ -22,7 +22,7 @@ x-payments-api-build: &payments-api-build
 
 x-payments-database-url: &payments-database-url postgresql://payments:${PAYMENTS_DB_PASSWORD:-payments}@postgres:5432/payments
 
-x-payment-webhook-secret: &payment-webhook-secret ${PAYMENT_WEBHOOK_SECRET:-local-only-payment-webhook-secret-change-me}
+x-payment-webhook-secret: &payment-webhook-secret ${PAYMENT_WEBHOOK_SECRET:-whsec_bG9jYWwtb25seS13ZWJob29rLWtleS1jaGFuZ2UtbWUh}
 
 x-payments-api-key: &payments-api-key ${PAYMENTS_API_KEY:-local-only-payments-api-key-change-me}
 

@@ -219,7 +219,7 @@ describe('Order events over SSE (e2e)', () => {
     return request(app.getHttpServer())
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
-      .set('X-Signature', signPayload(body, secret))
+      .set(signPayload(body, secret, JSON.parse(body).id))
       .send(body)
       .expect(200);
   };

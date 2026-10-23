@@ -3,7 +3,7 @@ import { validateEnv, validateMigrationEnv } from './env.schema.js';
 const apiKey = 'a'.repeat(32);
 const databaseUrl = 'postgresql://payments:secret@localhost:5432/payments';
 const webhookUrl = 'http://shop-api:3000/webhooks/payments';
-const webhookSecret = 'w'.repeat(32);
+const webhookSecret = 'whsec_bG9jYWwtb25seS13ZWJob29rLWtleS1jaGFuZ2UtbWUh';
 const required = {
   PAYMENTS_API_KEY: apiKey,
   DATABASE_URL: databaseUrl,
@@ -51,6 +51,16 @@ describe('validateEnv', () => {
   it('rejects a short webhook secret', () => {
     expect(() =>
       validateEnv({ ...required, PAYMENT_WEBHOOK_SECRET: 'short' }),
+    ).toThrow('Invalid environment variables');
+  });
+
+  it.each([
+    'w'.repeat(32),
+    'whsec_!!!!',
+    `whsec_${Buffer.alloc(8).toString('base64')}`,
+  ])('rejects an invalid webhook secret: %s', (secret) => {
+    expect(() =>
+      validateEnv({ ...required, PAYMENT_WEBHOOK_SECRET: secret }),
     ).toThrow('Invalid environment variables');
   });
 

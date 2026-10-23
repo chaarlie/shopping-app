@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { signatureHeader, verifySignature } from '@shop/webhook-signature';
+import { verifySignature } from '@shop/webhook-signature';
 import { Request } from 'express';
 import { Env } from '../../config/env.schema.js';
 
@@ -26,7 +26,7 @@ export class PaymentWebhookSignatureGuard implements CanActivate {
       .getRequest<RawBodyRequest<Request>>();
     const check = verifySignature(
       request.rawBody ?? Buffer.alloc(0),
-      request.header(signatureHeader),
+      request.headers,
       this.secret,
     );
 

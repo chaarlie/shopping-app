@@ -1,90 +1,86 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { Webhook, WebhookVerificationError } from 'standardwebhooks';
 
-export const signatureHeader = 'x-signature';
-
-export const defaultToleranceSeconds = 300;
+export type WebhookHeaders = Record<string, string> & {
+  'webhook-id': string;
+  'webhook-timestamp': string;
+  'webhook-signature': string;
+};
 
 export type SignatureCheck =
   | { valid: true }
-  | { valid: false; reason: 'missing' | 'malformed' | 'expired' | 'mismatch' };
+  | { valid: false; reason: 'missing' | 'malformed' | 'invalid' };
 
-export interface VerifyOptions {
-  now?: number;
-  toleranceSeconds?: number;
+export function isWebhookSecret(secret: string): boolean {
+  if (!secret.startsWith('whsec_')) {
+    return false;
+  }
+
+  const encoded = secret.slice(6);
+  const bytes = Buffer.from(encoded, 'base64');
+  return (
+    bytes.length >= 24 &&
+    bytes.length <= 64 &&
+    bytes.toString('base64') === encoded
+  );
 }
 
 export function signPayload(
   payload: string | Buffer,
   secret: string,
-  timestamp: number = currentTimestamp(),
-): string {
-  return `t=${timestamp},v1=${digest(secret, timestamp, payload)}`;
+  id: string,
+  timestamp: number = Math.floor(Date.now() / 1000),
+): WebhookHeaders {
+  return {
+    'webhook-id': id,
+    'webhook-timestamp': String(timestamp),
+    'webhook-signature': new Webhook(secret).sign(
+      id,
+      new Date(timestamp * 1000),
+      payload,
+    ),
+  };
 }
 
 export function verifySignature(
   payload: string | Buffer,
-  header: string | undefined,
+  headers: Record<string, string | string[] | undefined>,
   secret: string,
-  {
-    now = currentTimestamp(),
-    toleranceSeconds = defaultToleranceSeconds,
-  }: VerifyOptions = {},
 ): SignatureCheck {
-  if (!header) {
+  const id = headers['webhook-id'];
+  const timestamp = headers['webhook-timestamp'];
+  const signature = headers['webhook-signature'];
+
+  if (!id || !timestamp || !signature) {
     return { valid: false, reason: 'missing' };
   }
 
-  const parsed = parseHeader(header);
-
-  if (!parsed) {
+  if (
+    typeof id !== 'string' ||
+    typeof timestamp !== 'string' ||
+    typeof signature !== 'string' ||
+    !/^[A-Za-z0-9_-]+$/.test(id) ||
+    !/^[0-9]+$/.test(timestamp) ||
+    !Number.isSafeInteger(Number(timestamp))
+  ) {
     return { valid: false, reason: 'malformed' };
   }
 
-  if (Math.abs(now - parsed.timestamp) > toleranceSeconds) {
-    return { valid: false, reason: 'expired' };
+  try {
+    new Webhook(secret).verify(
+      payload,
+      {
+        'webhook-id': id,
+        'webhook-timestamp': timestamp,
+        'webhook-signature': signature,
+      },
+      { jsonParse: false },
+    );
+    return { valid: true };
+  } catch (error) {
+    if (error instanceof WebhookVerificationError) {
+      return { valid: false, reason: 'invalid' };
+    }
+
+    throw error;
   }
-
-  const expected = Buffer.from(
-    digest(secret, parsed.timestamp, payload),
-    'hex',
-  );
-  const received = Buffer.from(parsed.signature, 'hex');
-
-  return timingSafeEqual(expected, received)
-    ? { valid: true }
-    : { valid: false, reason: 'mismatch' };
-}
-
-function parseHeader(
-  header: string,
-): { timestamp: number; signature: string } | null {
-  const fields = new Map(
-    header.split(',').map((part) => {
-      const [key, ...value] = part.trim().split('=');
-      return [key, value.join('=')];
-    }),
-  );
-  const timestamp = Number(fields.get('t'));
-  const signature = fields.get('v1') ?? '';
-
-  if (!Number.isSafeInteger(timestamp) || !/^[0-9a-f]{64}$/.test(signature)) {
-    return null;
-  }
-
-  return { timestamp, signature };
-}
-
-function digest(
-  secret: string,
-  timestamp: number,
-  payload: string | Buffer,
-): string {
-  return createHmac('sha256', secret)
-    .update(`${timestamp}.`)
-    .update(payload)
-    .digest('hex');
-}
-
-function currentTimestamp(): number {
-  return Math.floor(Date.now() / 1000);
 }

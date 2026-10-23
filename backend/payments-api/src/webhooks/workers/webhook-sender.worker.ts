@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
-import { signatureHeader, signPayload } from '@shop/webhook-signature';
+import { signPayload } from '@shop/webhook-signature';
 import { IntervalJob } from '../../common/jobs/interval-job.js';
 import { Env } from '../../config/env.schema.js';
 import { ClaimDueWebhookEventsCommand } from '../commands/claim-due-webhook-events.command.js';
@@ -72,8 +72,7 @@ export class WebhookSenderWorker extends IntervalJob {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          [signatureHeader]: signPayload(body, this.secret),
-          'x-event-id': event.id,
+          ...signPayload(body, this.secret, event.id),
           'user-agent': 'payments-api-webhooks',
         },
         body,

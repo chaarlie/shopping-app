@@ -58,7 +58,7 @@ sequenceDiagram
 
     Note over W,PDB: Every second, claim the events that are due, with a 30 s lease<br/>(FOR UPDATE SKIP LOCKED), so two senders never take the same one.
     W->>S: the event, signed with the webhook secret
-    Note over W,S: X-Signature: t=timestamp,v1=HMAC-SHA256 of timestamp.body<br/>Each attempt is signed again with a fresh timestamp.
+    Note over W,S: Standard Webhooks: webhook-id, webhook-timestamp, webhook-signature<br/>v1,base64 HMAC-SHA256 of id.timestamp.body<br/>Each attempt is signed again with a fresh timestamp.
     alt bad signature, or a timestamp more than 5 min old
         S-->>W: 401
     else valid
@@ -78,11 +78,11 @@ sequenceDiagram
     end
 ```
 
-- **No result is lost.** payments-api saves each result and its event in one transaction, the outbox. The sender keeps trying until shop-api answers 2xx, so every event arrives at least once.
+- **Results remain durable.** payments-api saves each result and its event in one transaction. Delivery stops after three failed attempts; reconciliation recovers pending orders, with the late-payment limitation described below.
 - **Three attempts are enough.** Most failures are short, such as shop-api restarting. If all three fail, the reconciliation job finds the payment within about a minute (section 4).
 - **Repeats change nothing.** shop-api records the event id in the same transaction as the change.
 - **2xx means "recorded".** shop-api answers 2xx only after its transaction commits. It also answers 2xx for an event it records but can't apply, such as an amount that doesn't match the order or an unknown order, and flags it for a person to check. Only temporary failures, such as the database being down, answer 5xx, so that retrying can help.
-- **Only payments-api can send results.** The signature proves who sent the event and that nobody changed it, and the timestamp stops an old request from being replayed. The route sits outside `/api`, so nginx never forwards it, and shop-api checks the signature anyway.
+- **Only payments-api can send results.** The signature authenticates the event ID, attempt timestamp and exact body bytes. The receiver accepts timestamps within five minutes of its clock and deduplicates event IDs to prevent repeated effects. The signed header ID must match the payload ID. The route sits outside `/api`, so nginx never forwards it, and shop-api checks the signature anyway.
 - **Each direction has its own secret.** The service key lets shop-api call payments-api, and the webhook secret signs payments-api's events. Leaking one doesn't give away the other.
 - **The sender runs inside payments-api,** started when the app boots and stopped on shutdown. Several instances can run it at once, because each one only sends the events it has leased.
 - **The receiver is set in config.** payments-api reads its URL and the webhook secret from the environment, and shop-api reads the same secret. Both are checked at startup.
@@ -184,7 +184,7 @@ stateDiagram-v2
 
 - **No overselling.** Taking the stock and creating the order happen in one transaction in shop-api, and the stock is taken only if enough is left.
 - **No double charge.** A repeated request reuses its Idempotency-Key and gets the first answer, and payments-api allows one processing or succeeded payment per order, whatever the key.
-- **No lost payment results.** payments-api saves each result and its webhook event in one transaction, and keeps sending until shop-api answers 2xx. shop-api answers only after its own transaction commits, and drops repeats by event id.
+- **Durable payment results and duplicate protection.** Results and outbox events commit together. Delivery is attempted up to three times; pending orders also have reconciliation. This is not an unconditional delivery guarantee: see the cancelled-order limitation above.
 - **No forged results.** shop-api applies a result only with a valid signature and a recent timestamp, on a route nginx never forwards.
 - **No stuck orders.** The reconciliation job asks payments-api before cancelling, and a payment that succeeds after cancellation gets its stock back or is refunded.
 - **The browser never sets the amount.** shop-api prices the cart from the database. payments-api accepts only calls that carry the service key, and it is reachable only inside the Docker network.
@@ -201,6 +201,10 @@ Each guarantee has a test that was seen failing against a broken version of the 
 | The browser never sets the amount | `orders.spec.ts` in contracts: "refuses a price sent by the browser"; `orders.e2e-spec.ts`: the order is priced from the database | |
 
 ## Decisions
+
+- **Use Standard Webhooks for authentication.** The shared adapter uses `standardwebhooks` 1.1.1 for signing and verification. Every delivery carries `webhook-id` (the stable outbox/event ID), `webhook-timestamp` (fresh Unix seconds), and `webhook-signature` (`v1,` followed by the base64 signature). The signed content is `<id>.<timestamp>.<raw body>`. Event schemas and transactional deduplication remain application responsibilities. The receiver accepts multiple signatures for rotation but the sender currently uses one configured key.
+  - *The previous custom HMAC format* was small but required maintaining our own signature parser and protocol. The reference library provides an interoperable format. No broker or hosted webhook service is required.
+  - *Migration:* deploy both services together with a `whsec_` secret containing canonical base64 encoding of 24 to 64 key bytes. Old `X-Signature` requests and literal-string secrets are no longer accepted. Pending outbox events are signed at delivery time and need no data migration.
 
 - **Payment results come back as signed webhooks, not through a message broker.** payments-api behaves like a real payment gateway: it knows a URL and a secret, not what an order is, and it keeps retrying until shop-api confirms. The outbox gives the same at-least-once delivery a broker would.
   - *RabbitMQ between the services* was the first design. It holds events while shop-api is down, but the outbox already does that. It adds a service to run locally and on AWS, and it redelivers a failed message straight away, so waiting between retries needs extra queues.

@@ -118,7 +118,7 @@ describe('Payment webhooks (e2e)', () => {
     return request(app.getHttpServer())
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
-      .set('X-Signature', signPayload(body, signWith, timestamp))
+      .set(signPayload(body, signWith, JSON.parse(body).id, timestamp))
       .send(body);
   };
 
@@ -144,7 +144,7 @@ describe('Payment webhooks (e2e)', () => {
     await request(app.getHttpServer())
       .post('/api/webhooks/payments')
       .set('Content-Type', 'application/json')
-      .set('X-Signature', signPayload(body, secret))
+      .set(signPayload(body, secret, JSON.parse(body).id))
       .send(body)
       .expect(404);
   });
@@ -160,7 +160,7 @@ describe('Payment webhooks (e2e)', () => {
       .send(body)
       .expect(401);
     await deliver(event, {
-      signWith: 'someone-else-0123456789abcdef0123456789',
+      signWith: `whsec_${Buffer.alloc(32, 8).toString('base64')}`,
     }).expect(401);
     await deliver(event, {
       timestamp: Math.floor(Date.now() / 1000) - 301,
@@ -168,13 +168,30 @@ describe('Payment webhooks (e2e)', () => {
     await request(app.getHttpServer())
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
-      .set('X-Signature', signPayload(body, secret))
+      .set(signPayload(body, secret, JSON.parse(body).id))
       .send(
         body.replace(`"amountCents":${order.totalCents}`, '"amountCents":1'),
       )
       .expect(401);
 
     expect((await orderOf(order)).status).toBe('pending_payment');
+  });
+
+  it('rejects a signed header ID that disagrees with the event ID', async () => {
+    const order = await placeOrder();
+    const body = JSON.stringify(succeededFor(order));
+
+    await request(app.getHttpServer())
+      .post('/webhooks/payments')
+      .set('Content-Type', 'application/json')
+      .set(signPayload(body, secret, randomUUID()))
+      .send(body)
+      .expect(400);
+
+    expect((await orderOf(order)).status).toBe('pending_payment');
+    expect(
+      await dataSource.query('SELECT * FROM processed_payment_events'),
+    ).toEqual([]);
   });
 
   it('marks the order paid when its payment succeeds', async () => {

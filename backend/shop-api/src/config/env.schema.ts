@@ -1,3 +1,4 @@
+import { isWebhookSecret } from '@shop/webhook-signature';
 import { z } from 'zod';
 
 export const envSchema = z.object({
@@ -5,7 +6,12 @@ export const envSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   PAYMENTS_API_URL: z.url({ protocol: /^https?$/ }),
   PAYMENTS_API_KEY: z.string().min(32),
-  PAYMENT_WEBHOOK_SECRET: z.string().min(32),
+  PAYMENT_WEBHOOK_SECRET: z
+    .string()
+    .refine(
+      isWebhookSecret,
+      'Use whsec_ followed by canonical base64 encoding of 24 to 64 bytes',
+    ),
   ORDER_ACCESS_SECRET: z.string().min(32),
   ORDER_COOKIE_SECURE: z
     .enum(['true', 'false'])

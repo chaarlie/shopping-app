@@ -5,7 +5,7 @@ const required = {
   DATABASE_URL: databaseUrl,
   PAYMENTS_API_URL: 'http://payments-api:3000',
   PAYMENTS_API_KEY: 'k'.repeat(32),
-  PAYMENT_WEBHOOK_SECRET: 'w'.repeat(32),
+  PAYMENT_WEBHOOK_SECRET: 'whsec_bG9jYWwtb25seS13ZWJob29rLWtleS1jaGFuZ2UtbWUh',
   ORDER_ACCESS_SECRET: 's'.repeat(32),
 };
 
@@ -52,6 +52,16 @@ describe('validateEnv', () => {
       validateEnv({ ...required, ORDER_COOKIE_SECURE: 'false' })
         .ORDER_COOKIE_SECURE,
     ).toBe(false);
+  });
+
+  it.each([
+    'w'.repeat(32),
+    'whsec_!!!!',
+    `whsec_${Buffer.alloc(8).toString('base64')}`,
+  ])('rejects an invalid webhook secret: %s', (secret) => {
+    expect(() =>
+      validateEnv({ ...required, PAYMENT_WEBHOOK_SECRET: secret }),
+    ).toThrow('Invalid environment variables');
   });
 
   it('lets the migration runner start with only a database URL', () => {

@@ -130,12 +130,10 @@ describe('Webhook sender (e2e)', () => {
 
     expect(received).toHaveLength(1);
     const [{ headers, body }] = received;
-    expect(
-      verifySignature(body, headers['x-signature'] as string, secret),
-    ).toEqual({ valid: true });
+    expect(verifySignature(body, headers, secret)).toEqual({ valid: true });
     const event = paymentEventSchema.parse(JSON.parse(body));
     expect(event.type).toBe('payment.succeeded');
-    expect(headers['x-event-id']).toBe(event.id);
+    expect(headers['webhook-id']).toBe(event.id);
 
     const row = await outboxRow();
     expect(row.attempts).toBe(1);

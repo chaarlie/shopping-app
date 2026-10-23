@@ -80,4 +80,14 @@ pnpm --filter shop-api --filter payments-api test:e2e
 To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both.
 
 - `shop-api` needs `DATABASE_URL`, a Postgres connection URL. Apply migrations with `pnpm --filter shop-api build` followed by `pnpm --filter shop-api migration:run`. For checkout it also needs `PAYMENTS_API_URL` and `PAYMENTS_API_KEY`, to reach payments-api, `PAYMENT_WEBHOOK_SECRET`, the same secret payments-api signs its webhooks with, and `ORDER_ACCESS_SECRET`, at least 32 characters, which signs the order access cookies. Set `ORDER_COOKIE_SECURE=false` when it isn't served over HTTPS.
-- `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters, and `DATABASE_URL` for its own database. Apply its migrations the same way, with `pnpm --filter payments-api migration:run`. It also needs `PAYMENT_WEBHOOK_URL`, where it posts payment results, and `PAYMENT_WEBHOOK_SECRET`, at least 32 characters, which signs them. `PAYMENT_SETTLE_DELAY_MS` sets how long the simulated card provider takes to answer (2000 by default), and `BACKGROUND_JOBS=off` stops its workers, which the e2e tests use to run them step by step.
+- `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters, and `DATABASE_URL` for its own database. Apply its migrations the same way, with `pnpm --filter payments-api migration:run`. It also needs `PAYMENT_WEBHOOK_URL`, where it posts payment results, and `PAYMENT_WEBHOOK_SECRET`, in the Standard Webhooks format described below, which signs them. `PAYMENT_SETTLE_DELAY_MS` sets how long the simulated card provider takes to answer (2000 by default), and `BACKGROUND_JOBS=off` stops its workers, which the e2e tests use to run them step by step.
+
+## Webhook authentication
+
+Payment results use [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks), through the pinned `standardwebhooks` 1.1.1 reference library. Both services must use the same `PAYMENT_WEBHOOK_SECRET`: `whsec_` followed by canonical base64 encoding of 24 to 64 random bytes. Generate a 32-byte key with:
+
+```sh
+node -e "console.log('whsec_' + require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Compose provides a public local-development key. Set your own secret for a deployment. Upgrade both APIs together: the former literal-string secret and `X-Signature` format are incompatible. No database migration is needed; queued events receive the new headers when delivered. [Checkout flow](docs/checkout-flow.md) describes authentication, retries and recovery limits.
