@@ -12,6 +12,31 @@ docker compose up --build
 
 Then open http://localhost:8080. The API is served under http://localhost:8080/api, and http://localhost:8080/api/health reports whether it is up.
 
+## Buying through the API
+
+Until the checkout screens exist, a purchase can be made with curl. Payments only accept the simulated gateway's test cards:
+
+| Card | Result |
+|---|---|
+| `4242 4242 4242 4242` | Visa, approved |
+| `5555 5555 5555 4444` | Mastercard, approved |
+| `4000 0000 0000 0002` | Visa, declined |
+| `4000 0000 0000 9995` | Visa, declined for insufficient funds |
+
+```sh
+curl -s -X POST localhost:8080/api/products -H 'Content-Type: application/json' \
+  -d '{"sku":"RS-001","name":"Running Shoes","category":"Footwear","priceCents":8999,"stock":3}'
+
+curl -s -c cookies.txt -X POST localhost:8080/api/orders -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"name":"Ada Lovelace","email":"ada@example.com","items":[{"productId":1,"quantity":1}],
+       "card":{"number":"4242 4242 4242 4242","expMonth":12,"expYear":2030,"cvc":"123"}}'
+
+curl -s -N -b cookies.txt localhost:8080/api/orders/<reference>/events
+```
+
+The order answers `pending_payment` at once. The stream then shows it paid about two seconds later, when the simulated provider answers and its webhook arrives. After a decline, `POST /api/orders/<reference>/payments` with another card and a new `Idempotency-Key` tries again.
+
 ## Example CSV
 
 The example file provided with the challenge, `Code Challenge E-Commerce.csv`, was downloaded on **2026-10-20** from the challenge email.

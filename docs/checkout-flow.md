@@ -2,7 +2,7 @@
 
 This is the design the checkout is being built to, and this page changes in the same commits as the code.
 
-**Built so far:** payments-api takes payments with test cards and idempotency keys, allows one active payment per order, settles each payment through the simulated card provider, writes every result to its outbox in the same transaction, and refunds succeeded payments. Its webhook sender delivers the outbox as signed webhooks, as in section 2, with three attempts and a log of each one. shop-api places orders as in section 1: it takes the stock and saves the order in one transaction, sets the access cookie, asks payments-api for the payment with a namespaced Idempotency-Key, and takes a new attempt after a decline. It receives the webhooks as in section 2, checking the signature against the raw body, dropping repeats by event id and applying each result through the order states below, including late payments for cancelled orders. `GET /api/orders/:reference/events` streams the order as in section 3, from one `LISTEN` connection per instance. The reconciliation job and the refund calls are not built yet.
+**Status:** everything on this page is built in shop-api and payments-api, and [What the design guarantees](#what-the-design-guarantees) lists the test that proves each guarantee. The webapp's checkout screens are not built yet.
 
 payments-api plays the part of a payment gateway, and shop-api is the merchant. Requests go one way: shop-api asks payments-api to charge a card. Results come back the other way as signed webhooks, which is how gateways such as Stripe and Adyen report payments to merchants.
 
@@ -188,6 +188,17 @@ stateDiagram-v2
 - **No forged results.** shop-api applies a result only with a valid signature and a recent timestamp, on a route nginx never forwards.
 - **No stuck orders.** The reconciliation job asks payments-api before cancelling, and a payment that succeeds after cancellation gets its stock back or is refunded.
 - **The browser never sets the amount.** shop-api prices the cart from the database. payments-api accepts only calls that carry the service key, and it is reachable only inside the Docker network.
+
+Each guarantee has a test that was seen failing against a broken version of the code:
+
+| Guarantee | Test | Broken version it catches |
+|---|---|---|
+| No overselling | `orders.e2e-spec.ts`: "sells the last unit to only one of two buyers checking out at once" | the row lock and the stock condition both removed |
+| No double charge | `payments.e2e-spec.ts` in payments-api: "allows only one active payment per order, whatever the keys" | the partial unique index made non-unique |
+| No lost or repeated results | `payment-webhooks.e2e-spec.ts`: "applies an event once, however often it is delivered"; `webhooks.e2e-spec.ts` in payments-api: retries, dead events and the lease | the event id dedupe removed; the lease check removed |
+| No forged results | `payment-webhooks.e2e-spec.ts`: "refuses an event that is unsigned, signed with another secret, old or changed"; `webhook-signature` unit tests | the expiry check removed; a mismatch accepted |
+| No stuck orders | `reconciliation.e2e-spec.ts`: cancelling due orders, finding lost webhooks, refunds, and "cancels nothing while payments-api cannot be reached" | an unreachable payments-api treated as "no payments" |
+| The browser never sets the amount | `orders.spec.ts` in contracts: "refuses a price sent by the browser"; `orders.e2e-spec.ts`: the order is priced from the database | |
 
 ## Decisions
 
