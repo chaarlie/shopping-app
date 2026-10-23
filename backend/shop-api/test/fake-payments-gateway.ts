@@ -46,6 +46,7 @@ export class FakePaymentsGateway extends PaymentsGateway {
     const payment: Payment = {
       id: randomUUID(),
       orderReference: input.orderReference,
+      idempotencyKey,
       status: 'processing',
       amountCents: input.amountCents,
       currency: input.currency,

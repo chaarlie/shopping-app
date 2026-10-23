@@ -33,6 +33,7 @@ export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export const paymentSchema = z.object({
   id: z.uuid(),
   orderReference: z.string(),
+  idempotencyKey: z.string(),
   status: paymentStatusSchema,
   amountCents: z.number().int(),
   currency: currencySchema,

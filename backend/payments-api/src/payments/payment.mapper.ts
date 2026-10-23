@@ -5,6 +5,7 @@ export function toPayment(entity: PaymentEntity): Payment {
   return {
     id: entity.id,
     orderReference: entity.orderReference,
+    idempotencyKey: entity.idempotencyKey,
     status: entity.status,
     amountCents: entity.amountCents,
     currency: entity.currency,
