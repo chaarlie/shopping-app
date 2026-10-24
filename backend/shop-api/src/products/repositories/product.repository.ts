@@ -30,6 +30,8 @@ export abstract class ProductRepository extends GenericRepository<
 
   abstract findByIds(ids: number[]): Promise<ProductEntity[]>;
 
+  abstract findAfter(afterId: number, limit: number): Promise<ProductEntity[]>;
+
   abstract changeStock(id: number, delta: number): Promise<boolean>;
 
   abstract createMany(products: NewProduct[]): Promise<void>;

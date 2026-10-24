@@ -9,6 +9,7 @@ import { setupApp } from './../src/app.setup.js';
 import type { ProductSearchDocument } from './../src/products/search/product-search-document.js';
 import { ProductSearchIndex } from './../src/products/search/product-search-index.js';
 import { ProductSearchIndexerJob } from './../src/products/search/product-search-indexer.job.js';
+import { ProductSearchRebuilder } from './../src/products/search/product-search-rebuilder.js';
 
 describe('Product search index sync (e2e)', () => {
   let app: INestApplication<App>;
@@ -16,6 +17,7 @@ describe('Product search index sync (e2e)', () => {
   let indexer: ProductSearchIndexerJob;
   let index: ProductSearchIndex;
   let client: Client;
+  let rebuilder: ProductSearchRebuilder;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -28,6 +30,7 @@ describe('Product search index sync (e2e)', () => {
     indexer = app.get(ProductSearchIndexerJob);
     index = app.get(ProductSearchIndex);
     client = app.get(Client);
+    rebuilder = app.get(ProductSearchRebuilder);
   });
 
   beforeEach(async () => {
@@ -145,5 +148,22 @@ describe('Product search index sync (e2e)', () => {
     expect(await index.currentIndex()).toBe('products-v1');
     expect(await stored(shoes.id)).toMatchObject({ name: 'Running Shoes' });
     expect(await stored(mug.id)).toMatchObject({ name: 'Mug' });
+  });
+
+  it('rebuilds the index from the database into a new index', async () => {
+    const shoes = await addProduct('RS-1', 'Running Shoes');
+    const before = await index.currentIndex();
+
+    const rebuilt = await rebuilder.rebuild();
+
+    expect(rebuilt).toMatchObject({ products: 1, replaced: before });
+    expect(await index.currentIndex()).toBe(rebuilt.index);
+    expect(await stored(shoes.id)).toEqual({
+      name: 'Running Shoes',
+      version: 1,
+    });
+    expect(
+      (await client.indices.exists({ index: before as string })).body,
+    ).toBe(false);
   });
 });
