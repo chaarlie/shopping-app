@@ -18,7 +18,9 @@ import { CompleteProductSearchChangesCommandHandler } from './search/commands/ha
 import { QueueAllProductsForSearchCommandHandler } from './search/commands/handlers/queue-all-products-for-search-command.handler.js';
 import { OpenSearchProductSearchIndex } from './search/opensearch-product-search-index.js';
 import { ProductSearchIndex } from './search/product-search-index.js';
+import { ProductSearchIndexerJob } from './search/product-search-indexer.job.js';
 import { ProductSearchOutbox } from './search/product-search-outbox.js';
+import { FindProductsByIdsQueryHandler } from './search/queries/handlers/find-products-by-ids-query.handler.js';
 import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outbox.js';
 
 @Module({
@@ -51,6 +53,8 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     GetProductQueryHandler,
     ListProductsQueryHandler,
     ListCategoriesQueryHandler,
+    FindProductsByIdsQueryHandler,
+    ProductSearchIndexerJob,
   ],
   exports: [ProductRepository],
 })
