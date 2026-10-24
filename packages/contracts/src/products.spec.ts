@@ -1,8 +1,17 @@
 import {
   createProductSchema,
   productListQuerySchema,
+  productSearchQuerySchema,
   updateProductSchema,
 } from './products.js';
+
+describe('productSearchQuerySchema', () => {
+  it('refuses a sort it does not know', () => {
+    expect(
+      productSearchQuerySchema.safeParse({ sort: 'popularity' }).success,
+    ).toBe(false);
+  });
+});
 
 const validProduct = {
   sku: 'rs-001',
