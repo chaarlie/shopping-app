@@ -4,6 +4,7 @@ import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-t
 import { TypeOrmGenericRepository } from '../../database/repository/typeorm/typeorm-generic.repository.js';
 import { ProductEntity } from '../entities/product.entity.js';
 import {
+  CategoryCount,
   NewProduct,
   ProductChanges,
   ProductRepository,
@@ -81,5 +82,15 @@ export class TypeOrmProductRepository
       .into(ProductEntity)
       .values(products)
       .execute();
+  }
+
+  listCategories(): Promise<CategoryCount[]> {
+    return this.repository
+      .createQueryBuilder('product')
+      .select('product.category', 'name')
+      .addSelect('CAST(COUNT(*) AS integer)', 'productCount')
+      .groupBy('product.category')
+      .orderBy('product.category', 'ASC')
+      .getRawMany<CategoryCount>();
   }
 }
