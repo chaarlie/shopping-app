@@ -13,6 +13,8 @@ import { ListCategoriesQueryHandler } from './queries/handlers/list-categories-q
 import { ListProductsQueryHandler } from './queries/handlers/list-products-query.handler.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { TypeOrmProductRepository } from './repositories/typeorm-product.repository.js';
+import { OpenSearchProductSearchIndex } from './search/opensearch-product-search-index.js';
+import { ProductSearchIndex } from './search/product-search-index.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity])],
@@ -25,6 +27,10 @@ import { TypeOrmProductRepository } from './repositories/typeorm-product.reposit
     {
       provide: ProductRepository,
       useClass: TypeOrmProductRepository,
+    },
+    {
+      provide: ProductSearchIndex,
+      useClass: OpenSearchProductSearchIndex,
     },
     CreateProductCommandHandler,
     UpdateProductCommandHandler,
