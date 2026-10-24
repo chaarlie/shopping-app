@@ -1,6 +1,12 @@
+import type { ProductSearchQuery } from '@shop/contracts';
 import { ProductIndexChange } from './product-search-document.js';
 
 export type IndexWriteOutcome = 'done' | 'failed';
+
+export interface ProductSearchHits {
+  ids: number[];
+  total: number;
+}
 
 export abstract class ProductSearchIndex {
   abstract currentIndex(): Promise<string | null>;
@@ -15,6 +21,8 @@ export abstract class ProductSearchIndex {
     changes: ProductIndexChange[],
     index?: string,
   ): Promise<Map<number, IndexWriteOutcome>>;
+
+  abstract search(query: ProductSearchQuery): Promise<ProductSearchHits>;
 
   abstract refresh(): Promise<void>;
 }

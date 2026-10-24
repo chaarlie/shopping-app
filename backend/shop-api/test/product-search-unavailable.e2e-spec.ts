@@ -37,6 +37,31 @@ describe('Product search while OpenSearch is down (e2e)', () => {
     await app.close();
   });
 
+  it('answers 503 for a search and keeps browsing and editing working', async () => {
+    await request(app.getHttpServer())
+      .post('/api/products')
+      .send({
+        sku: 'RS-1',
+        name: 'Running Shoes',
+        category: 'Footwear',
+        priceCents: 1000,
+        stock: 5,
+      })
+      .expect(201);
+
+    const { body } = await request(app.getHttpServer())
+      .get('/api/products?q=running')
+      .expect(503);
+    expect(body.message).toBe(
+      'Search is unavailable right now. Browse by category instead.',
+    );
+
+    const browse = await request(app.getHttpServer())
+      .get('/api/products?category=Footwear')
+      .expect(200);
+    expect(browse.body.total).toBe(1);
+  });
+
   it('keeps product changes queued until OpenSearch is back', async () => {
     await request(app.getHttpServer())
       .post('/api/products')

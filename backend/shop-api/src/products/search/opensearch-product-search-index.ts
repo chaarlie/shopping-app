@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client, errors, type API } from '@opensearch-project/opensearch';
+import type { ProductSearchQuery } from '@shop/contracts';
 import { SearchUnavailableError } from '../../common/errors.js';
 import { Env } from '../../config/env.schema.js';
 import {
@@ -8,13 +9,25 @@ import {
   productIndexDefinitionVersion,
 } from './product-index.definition.js';
 import { ProductIndexChange } from './product-search-document.js';
-import { IndexWriteOutcome, ProductSearchIndex } from './product-search-index.js';
+import {
+  IndexWriteOutcome,
+  ProductSearchHits,
+  ProductSearchIndex,
+} from './product-search-index.js';
+import { buildProductSearchRequest } from './product-search-request.js';
 
 interface BulkItemResult {
   status: number;
 }
 
 type BulkItem = Partial<Record<'index' | 'delete', BulkItemResult>>;
+
+interface SearchHitsBody {
+  hits: {
+    total?: number | { value: number };
+    hits: { _id: string }[];
+  };
+}
 
 @Injectable()
 export class OpenSearchProductSearchIndex implements ProductSearchIndex {
@@ -116,6 +129,27 @@ export class OpenSearchProductSearchIndex implements ProductSearchIndex {
         outcomeOf(items[position]),
       ]),
     );
+  }
+
+  async search(query: ProductSearchQuery): Promise<ProductSearchHits> {
+    const response = await this.call(() =>
+      this.client.search(
+        { index: this.alias, body: buildProductSearchRequest(query) },
+        { ignore: [404] },
+      ),
+    );
+
+    if (response.statusCode === 404) {
+      throw new SearchUnavailableError(
+        'Search is still being set up. Browse by category instead.',
+      );
+    }
+
+    const { hits } = response.body as SearchHitsBody;
+    const total =
+      typeof hits.total === 'number' ? hits.total : (hits.total?.value ?? 0);
+
+    return { ids: hits.hits.map((hit) => Number(hit._id)), total };
   }
 
   async refresh(): Promise<void> {

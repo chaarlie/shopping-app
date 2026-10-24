@@ -31,6 +31,7 @@ import { UpdateProductCommand } from '../commands/update-product.command.js';
 import { toProduct } from '../product.mapper.js';
 import { GetProductQuery } from '../queries/get-product.query.js';
 import { ListProductsQuery } from '../queries/list-products.query.js';
+import { SearchProductsQuery } from '../search/queries/search-products.query.js';
 
 @Controller('products')
 export class ProductsRestController {
@@ -44,7 +45,9 @@ export class ProductsRestController {
     @Query(new ZodValidationPipe(productSearchQuerySchema))
     query: ProductSearchQuery,
   ): Promise<ProductPage> {
-    return this.queryBus.execute(new ListProductsQuery(query));
+    return this.queryBus.execute(
+      query.q ? new SearchProductsQuery(query) : new ListProductsQuery(query),
+    );
   }
 
   @Get(':id')
