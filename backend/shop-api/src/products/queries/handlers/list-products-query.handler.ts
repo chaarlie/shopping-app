@@ -1,10 +1,17 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
-import { ProductPage } from '@shop/contracts';
+import { ProductPage, ProductSort } from '@shop/contracts';
 import { ProductEntity } from '../../entities/product.entity.js';
 import { toProduct } from '../../product.mapper.js';
 import { ListProductsQuery } from '../list-products.query.js';
+
+const orderings: Record<ProductSort, [string, 'ASC' | 'DESC']> = {
+  name: ['product.name', 'ASC'],
+  price_asc: ['product.priceCents', 'ASC'],
+  price_desc: ['product.priceCents', 'DESC'],
+  newest: ['product.createdAt', 'DESC'],
+};
 
 @QueryHandler(ListProductsQuery)
 export class ListProductsQueryHandler implements IQueryHandler<ListProductsQuery> {
@@ -13,11 +20,12 @@ export class ListProductsQueryHandler implements IQueryHandler<ListProductsQuery
   ) {}
 
   async execute({ filters }: ListProductsQuery): Promise<ProductPage> {
-    const { page, pageSize, category } = filters;
+    const { page, pageSize, category, sort = 'name' } = filters;
+    const [column, direction] = orderings[sort];
     const query = this.txHost.tx
       .getRepository(ProductEntity)
       .createQueryBuilder('product')
-      .orderBy('product.name', 'ASC')
+      .orderBy(column, direction)
       .addOrderBy('product.id', 'ASC')
       .skip((page - 1) * pageSize)
       .take(pageSize);

@@ -125,6 +125,71 @@ describe('Products (e2e)', () => {
     expect(body.items[0].sku).toBe('B-1');
   });
 
+  it('sorts the list by price or by newest', async () => {
+    await createProduct({
+      ...runningShoes,
+      sku: 'A-1',
+      name: 'Cutting Board',
+      priceCents: 2500,
+    });
+    await createProduct({
+      ...runningShoes,
+      sku: 'A-2',
+      name: 'Air Purifier',
+      priceCents: 12000,
+    });
+    await createProduct({
+      ...runningShoes,
+      sku: 'A-3',
+      name: 'Backpack',
+      priceCents: 4000,
+    });
+
+    const namesSortedBy = async (sort: string) =>
+      (
+        await request(app.getHttpServer())
+          .get(`/api/products?sort=${sort}`)
+          .expect(200)
+      ).body.items.map((item: { name: string }) => item.name);
+
+    expect(await namesSortedBy('price_asc')).toEqual([
+      'Cutting Board',
+      'Backpack',
+      'Air Purifier',
+    ]);
+    expect(await namesSortedBy('price_desc')).toEqual([
+      'Air Purifier',
+      'Backpack',
+      'Cutting Board',
+    ]);
+    expect(await namesSortedBy('newest')).toEqual([
+      'Backpack',
+      'Air Purifier',
+      'Cutting Board',
+    ]);
+  });
+
+  it('rejects a sort it does not know', () => {
+    return request(app.getHttpServer())
+      .get('/api/products?sort=popularity')
+      .expect(400);
+  });
+
+  it('lists categories with their product counts', async () => {
+    await createProduct({ ...runningShoes, sku: 'A-1' });
+    await createProduct({ ...runningShoes, sku: 'A-2' });
+    await createProduct({ ...runningShoes, sku: 'B-1', category: 'Kitchen' });
+
+    const { body } = await request(app.getHttpServer())
+      .get('/api/categories')
+      .expect(200);
+
+    expect(body.items).toEqual([
+      { name: 'Footwear', productCount: 2 },
+      { name: 'Kitchen', productCount: 1 },
+    ]);
+  });
+
   it('updates a product when the version matches', async () => {
     await createProduct(runningShoes).expect(201);
 
