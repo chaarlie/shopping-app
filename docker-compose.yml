@@ -61,6 +61,7 @@ services:
       PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
       ORDER_ACCESS_SECRET: ${ORDER_ACCESS_SECRET:-local-only-order-access-secret-change-me}
       ORDER_COOKIE_SECURE: "false"
+      OPENSEARCH_URL: http://opensearch:9200
     depends_on:
       shop-api-migrate:
         condition: service_completed_successfully
@@ -129,6 +130,22 @@ services:
     networks:
       - backend
 
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      <<: *healthcheck
+      start_period: 60s
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' || exit 1"]
+    networks:
+      - backend
+
 networks:
   edge:
   backend:
@@ -136,3 +153,4 @@ networks:
 
 volumes:
   postgres-data:
+  opensearch-data:

@@ -13,6 +13,13 @@ import { ListCategoriesQueryHandler } from './queries/handlers/list-categories-q
 import { ListProductsQueryHandler } from './queries/handlers/list-products-query.handler.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { TypeOrmProductRepository } from './repositories/typeorm-product.repository.js';
+import { ClaimProductSearchChangesCommandHandler } from './search/commands/handlers/claim-product-search-changes-command.handler.js';
+import { CompleteProductSearchChangesCommandHandler } from './search/commands/handlers/complete-product-search-changes-command.handler.js';
+import { QueueAllProductsForSearchCommandHandler } from './search/commands/handlers/queue-all-products-for-search-command.handler.js';
+import { OpenSearchProductSearchIndex } from './search/opensearch-product-search-index.js';
+import { ProductSearchIndex } from './search/product-search-index.js';
+import { ProductSearchOutbox } from './search/product-search-outbox.js';
+import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outbox.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity])],
@@ -26,10 +33,21 @@ import { TypeOrmProductRepository } from './repositories/typeorm-product.reposit
       provide: ProductRepository,
       useClass: TypeOrmProductRepository,
     },
+    {
+      provide: ProductSearchIndex,
+      useClass: OpenSearchProductSearchIndex,
+    },
+    {
+      provide: ProductSearchOutbox,
+      useClass: TypeOrmProductSearchOutbox,
+    },
     CreateProductCommandHandler,
     UpdateProductCommandHandler,
     DeleteProductCommandHandler,
     ImportProductsCommandHandler,
+    ClaimProductSearchChangesCommandHandler,
+    CompleteProductSearchChangesCommandHandler,
+    QueueAllProductsForSearchCommandHandler,
     GetProductQueryHandler,
     ListProductsQueryHandler,
     ListCategoriesQueryHandler,
