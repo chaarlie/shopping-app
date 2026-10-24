@@ -23,6 +23,7 @@ import { ProductSearchOutbox } from './search/product-search-outbox.js';
 import { ProductSearchRebuilder } from './search/product-search-rebuilder.js';
 import { FindProductsAfterQueryHandler } from './search/queries/handlers/find-products-after-query.handler.js';
 import { FindProductsByIdsQueryHandler } from './search/queries/handlers/find-products-by-ids-query.handler.js';
+import { SearchProductsQueryHandler } from './search/queries/handlers/search-products-query.handler.js';
 import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outbox.js';
 
 @Module({
@@ -55,6 +56,7 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     GetProductQueryHandler,
     ListProductsQueryHandler,
     ListCategoriesQueryHandler,
+    SearchProductsQueryHandler,
     FindProductsByIdsQueryHandler,
     FindProductsAfterQueryHandler,
     ProductSearchIndexerJob,

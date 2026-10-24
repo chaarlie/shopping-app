@@ -9,11 +9,16 @@ import {
   ConflictError,
   IdempotencyKeyReusedError,
   NotFoundError,
+  SearchUnavailableError,
   ValidationError,
 } from '../errors.js';
 
 type DomainError =
-  NotFoundError | ConflictError | ValidationError | IdempotencyKeyReusedError;
+  | NotFoundError
+  | ConflictError
+  | ValidationError
+  | IdempotencyKeyReusedError
+  | SearchUnavailableError;
 
 const statusFor = (exception: DomainError): [HttpStatus, string] => {
   if (exception instanceof NotFoundError) {
@@ -28,10 +33,20 @@ const statusFor = (exception: DomainError): [HttpStatus, string] => {
     return [HttpStatus.UNPROCESSABLE_ENTITY, 'Unprocessable Entity'];
   }
 
+  if (exception instanceof SearchUnavailableError) {
+    return [HttpStatus.SERVICE_UNAVAILABLE, 'Service Unavailable'];
+  }
+
   return [HttpStatus.BAD_REQUEST, 'Bad Request'];
 };
 
-@Catch(NotFoundError, ConflictError, ValidationError, IdempotencyKeyReusedError)
+@Catch(
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+  IdempotencyKeyReusedError,
+  SearchUnavailableError,
+)
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: DomainError, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();

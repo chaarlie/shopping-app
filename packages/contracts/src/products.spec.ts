@@ -6,10 +6,33 @@ import {
 } from './products.js';
 
 describe('productSearchQuerySchema', () => {
+  it('trims the search text and reads paging from query strings', () => {
+    expect(
+      productSearchQuerySchema.parse({ q: '  running ', page: '2' }),
+    ).toEqual({ q: 'running', page: 2, pageSize: 20 });
+  });
+
+  it('refuses search text that is only whitespace', () => {
+    expect(productSearchQuerySchema.safeParse({ q: '   ' }).success).toBe(
+      false,
+    );
+  });
+
   it('refuses a sort it does not know', () => {
     expect(
       productSearchQuerySchema.safeParse({ sort: 'popularity' }).success,
     ).toBe(false);
+  });
+
+  it('refuses pages past the first 10,000 results', () => {
+    expect(
+      productSearchQuerySchema.safeParse({ page: '101', pageSize: '100' })
+        .success,
+    ).toBe(false);
+    expect(
+      productSearchQuerySchema.safeParse({ page: '100', pageSize: '100' })
+        .success,
+    ).toBe(true);
   });
 });
 
