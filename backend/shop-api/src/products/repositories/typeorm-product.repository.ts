@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
+import { In } from 'typeorm';
 import { TypeOrmGenericRepository } from '../../database/repository/typeorm/typeorm-generic.repository.js';
 import { ProductEntity } from '../entities/product.entity.js';
 import {
@@ -58,6 +59,14 @@ export class TypeOrmProductRepository
       .orderBy('product.id', 'ASC')
       .setLock('pessimistic_write')
       .getMany();
+  }
+
+  findByIds(ids: number[]): Promise<ProductEntity[]> {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.repository.findBy({ id: In(ids) });
   }
 
   async changeStock(id: number, delta: number): Promise<boolean> {
