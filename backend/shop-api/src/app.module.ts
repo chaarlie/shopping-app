@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { ProductsModule } from './products/products.module.js';
+import { OpenSearchModule } from './search/opensearch.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProductsModule } from './products/products.module.js';
     }),
     CqrsModule.forRoot(),
     DatabaseModule,
+    OpenSearchModule,
     HealthModule,
     ProductsModule,
     OrdersModule,

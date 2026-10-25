@@ -7,6 +7,7 @@ const required = {
   PAYMENTS_API_KEY: 'k'.repeat(32),
   PAYMENT_WEBHOOK_SECRET: 'whsec_bG9jYWwtb25seS13ZWJob29rLWtleS1jaGFuZ2UtbWUh',
   ORDER_ACCESS_SECRET: 's'.repeat(32),
+  OPENSEARCH_URL: 'http://opensearch:9200',
 };
 
 describe('validateEnv', () => {
@@ -15,8 +16,15 @@ describe('validateEnv', () => {
       ...required,
       PORT: 3000,
       ORDER_COOKIE_SECURE: true,
+      OPENSEARCH_INDEX: 'products',
       BACKGROUND_JOBS: 'on',
     });
+  });
+
+  it('refuses a search index name OpenSearch would reject', () => {
+    expect(() =>
+      validateEnv({ ...required, OPENSEARCH_INDEX: 'Products' }),
+    ).toThrow('Invalid environment variables');
   });
 
   it('reads the port from a string', () => {

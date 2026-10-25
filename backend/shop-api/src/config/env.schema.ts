@@ -17,6 +17,14 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
+  OPENSEARCH_URL: z.url({ protocol: /^https?$/ }),
+  OPENSEARCH_INDEX: z
+    .string()
+    .regex(
+      /^[a-z0-9][a-z0-9_-]{0,63}$/,
+      'Use 1 to 64 lowercase letters, digits, hyphens or underscores',
+    )
+    .default('products'),
   BACKGROUND_JOBS: z.enum(['on', 'off']).default('on'),
 });
 

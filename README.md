@@ -75,11 +75,11 @@ pnpm -r test
 pnpm --filter shop-api --filter payments-api test:e2e
 ```
 
-`typecheck` covers the tests as well as the source, and needs `build` first so the shared packages are compiled. Both services' e2e tests start a throwaway Postgres container with Testcontainers, so Docker must be running.
+`typecheck` covers the tests as well as the source, and needs `build` first so the shared packages are compiled. Both services' e2e tests start throwaway containers with Testcontainers, Postgres for both and OpenSearch for shop-api, so Docker must be running.
 
 To run a service outside Docker, use `pnpm --filter shop-api start:dev` or `pnpm --filter payments-api start:dev`. Both listen on port 3000 unless `PORT` is set, so give one of them another port to run both.
 
-- `shop-api` needs `DATABASE_URL`, a Postgres connection URL. Apply migrations with `pnpm --filter shop-api build` followed by `pnpm --filter shop-api migration:run`. For checkout it also needs `PAYMENTS_API_URL` and `PAYMENTS_API_KEY`, to reach payments-api, `PAYMENT_WEBHOOK_SECRET`, the same secret payments-api signs its webhooks with, and `ORDER_ACCESS_SECRET`, at least 32 characters, which signs the order access cookies. Set `ORDER_COOKIE_SECURE=false` when it isn't served over HTTPS.
+- `shop-api` needs `DATABASE_URL`, a Postgres connection URL. Apply migrations with `pnpm --filter shop-api build` followed by `pnpm --filter shop-api migration:run`. For checkout it also needs `PAYMENTS_API_URL` and `PAYMENTS_API_KEY`, to reach payments-api, `PAYMENT_WEBHOOK_SECRET`, the same secret payments-api signs its webhooks with, and `ORDER_ACCESS_SECRET`, at least 32 characters, which signs the order access cookies. Set `ORDER_COOKIE_SECURE=false` when it isn't served over HTTPS. For search it needs `OPENSEARCH_URL`, and `OPENSEARCH_INDEX` names the index alias (`products` by default).
 - `payments-api` needs `PAYMENTS_API_KEY`, at least 32 characters, and `DATABASE_URL` for its own database. Apply its migrations the same way, with `pnpm --filter payments-api migration:run`. It also needs `PAYMENT_WEBHOOK_URL`, where it posts payment results, and `PAYMENT_WEBHOOK_SECRET`, in the Standard Webhooks format described below, which signs them. `PAYMENT_SETTLE_DELAY_MS` sets how long the simulated card provider takes to answer (2000 by default), and `BACKGROUND_JOBS=off` stops its workers, which the e2e tests use to run them step by step.
 
 ## Webhook authentication
