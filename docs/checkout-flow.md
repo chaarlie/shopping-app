@@ -217,3 +217,5 @@ Each guarantee has a test that was seen failing against a broken version of the 
 ### Webhook retry test timing
 
 The sender marks an event dead after three failed deliveries. Its e2e test asserts each claimed delivery, checks that attempts one and two remain live, and checks that attempt three marks the event dead. Test fixtures explicitly make settlement due using the database clock and webhook delivery due using the application clock. Mixing Postgres `now()` precision with JavaScript millisecond timestamps previously allowed a loop iteration to claim nothing. A regression test holds the application clock behind the database clock to reproduce that boundary without sleeps.
+
+Payment settlement e2e fixtures explicitly set processing payments due using the database clock before running the worker. A test holds the application clock one minute ahead, preventing host/container clock differences from skipping settlement and causing unrelated listing/refund assertions to fail. Production settlement scheduling is unchanged.
