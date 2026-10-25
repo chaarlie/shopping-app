@@ -45,6 +45,10 @@ export function normalizeProductRow(
 
   const priceCents = parsePriceCents(values.price, warnings);
   const stock = parseStock(values.stock);
+  if (stock.ok && stock.value < 0) {
+    warnings.push(`${stock.value} → 0 · order at least ${-stock.value}`);
+    stock.value = 0;
+  }
   const weightGrams = parseWeightGrams(values.weight_kg, warnings);
 
   const parsedFields = { priceCents, stock, weightGrams };

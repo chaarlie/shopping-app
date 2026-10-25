@@ -1,8 +1,8 @@
+import request from 'supertest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -59,12 +59,12 @@ describe('Product import (e2e)', () => {
       totalRows: 97,
       blankRows: 2,
       counts: {
-        create: 85,
+        create: 86,
         update: 0,
         unchanged: 0,
         skip: 0,
         duplicate: 0,
-        error: 10,
+        error: 9,
       },
     });
     expect(await productCount()).toBe(0);
@@ -73,8 +73,8 @@ describe('Product import (e2e)', () => {
   it('imports the challenge CSV in one go', async () => {
     const { body } = await upload(challengeCsv).expect(200);
 
-    expect(body.counts.create).toBe(85);
-    expect(await productCount()).toBe(85);
+    expect(body.counts.create).toBe(86);
+    expect(await productCount()).toBe(86);
 
     const [stored] = await dataSource.query(
       "SELECT name FROM products WHERE sku = 'XS-001'",
@@ -87,7 +87,7 @@ describe('Product import (e2e)', () => {
 
     const { body } = await upload(challengeCsv).expect(200);
 
-    expect(body.counts).toMatchObject({ create: 0, update: 0, unchanged: 85 });
+    expect(body.counts).toMatchObject({ create: 0, update: 0, unchanged: 86 });
     const [{ max }] = await dataSource.query(
       'SELECT max(version) AS max FROM products',
     );
@@ -101,13 +101,25 @@ describe('Product import (e2e)', () => {
       'Wireless Mouse,WM-042,Ergonomic wireless mouse with USB receiver,Electronics,27.50,60,0.12',
     );
 
-    const { body } = await upload(changed).expect(200);
+    const { body } = await upload(changed, '?updateStock=true').expect(200);
 
-    expect(body.counts).toMatchObject({ update: 1, unchanged: 84 });
+    expect(body.counts).toMatchObject({ update: 1, unchanged: 85 });
     const [mouse] = await dataSource.query(
       "SELECT price_cents, stock, version FROM products WHERE sku = 'WM-042'",
     );
     expect(mouse).toEqual({ price_cents: 2750, stock: 60, version: 2 });
+  });
+
+  it('does not replenish sold stock when a file is imported again', async () => {
+    await upload(challengeCsv).expect(200);
+    await dataSource.query(
+      "UPDATE products SET stock=2,version=version+1 WHERE sku='WM-042'",
+    );
+    await upload(challengeCsv).expect(200);
+    const [mouse] = await dataSource.query(
+      "SELECT stock FROM products WHERE sku='WM-042'",
+    );
+    expect(mouse.stock).toBe(2);
   });
 
   it('keeps existing products when asked to skip them', async () => {
