@@ -14,14 +14,14 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   createProductSchema,
-  productListQuerySchema,
+  productSearchQuerySchema,
   updateProductSchema,
 } from '@shop/contracts';
 import type {
   CreateProductInput,
   Product,
-  ProductListQuery,
   ProductPage,
+  ProductSearchQuery,
   UpdateProductInput,
 } from '@shop/contracts';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
@@ -41,10 +41,10 @@ export class ProductsRestController {
 
   @Get()
   list(
-    @Query(new ZodValidationPipe(productListQuerySchema))
-    filters: ProductListQuery,
+    @Query(new ZodValidationPipe(productSearchQuerySchema))
+    query: ProductSearchQuery,
   ): Promise<ProductPage> {
-    return this.queryBus.execute(new ListProductsQuery(filters));
+    return this.queryBus.execute(new ListProductsQuery(query));
   }
 
   @Get(':id')

@@ -96,3 +96,32 @@ export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 export const productPageSchema = pageSchema(productSchema);
 
 export type ProductPage = z.infer<typeof productPageSchema>;
+
+export const productSortSchema = z.enum([
+  'name',
+  'price_asc',
+  'price_desc',
+  'newest',
+]);
+
+export type ProductSort = z.infer<typeof productSortSchema>;
+
+export const productSearchQuerySchema = pageQuerySchema.extend({
+  category: categorySchema.optional(),
+  sort: productSortSchema.optional(),
+});
+
+export type ProductSearchQuery = z.infer<typeof productSearchQuerySchema>;
+
+export const categorySummarySchema = z.object({
+  name: z.string(),
+  productCount: z.number().int(),
+});
+
+export type CategorySummary = z.infer<typeof categorySummarySchema>;
+
+export const categoryListSchema = z.object({
+  items: z.array(categorySummarySchema),
+});
+
+export type CategoryList = z.infer<typeof categoryListSchema>;

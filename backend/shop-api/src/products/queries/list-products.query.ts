@@ -1,8 +1,8 @@
 import { Query } from '@nestjs/cqrs';
-import { ProductListQuery, ProductPage } from '@shop/contracts';
+import { ProductPage, ProductSearchQuery } from '@shop/contracts';
 
 export class ListProductsQuery extends Query<ProductPage> {
-  constructor(public readonly filters: ProductListQuery) {
+  constructor(public readonly filters: ProductSearchQuery) {
     super();
   }
 }

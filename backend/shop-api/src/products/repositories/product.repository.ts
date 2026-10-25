@@ -14,6 +14,11 @@ export type NewProduct = Pick<
 
 export type ProductChanges = Partial<Omit<NewProduct, 'sku'>>;
 
+export interface CategoryCount {
+  name: string;
+  productCount: number;
+}
+
 export abstract class ProductRepository extends GenericRepository<
   ProductEntity,
   NewProduct
@@ -31,4 +36,6 @@ export abstract class ProductRepository extends GenericRepository<
   abstract changeStock(id: number, delta: number): Promise<boolean>;
 
   abstract createMany(products: NewProduct[]): Promise<void>;
+
+  abstract listCategories(): Promise<CategoryCount[]>;
 }
