@@ -213,3 +213,7 @@ Each guarantee has a test that was seen failing against a broken version of the 
 - **The access token travels in an httpOnly cookie.** The browser's `EventSource` can't send headers, and a cookie is sent by itself and can't be read by page scripts. *A token in the URL* was the alternative, but URLs end up in logs and browser history.
 - **The access token is an HMAC of the order reference, made with a server secret.** shop-api stores nothing it would have to keep secret, and a repeated checkout request gets the same token back, so a double click can't leave the browser holding a token that no longer works. The cost is that a token can't be revoked without changing the secret, which is acceptable for guest orders.
 - **One receiver, set in config.** Real gateways let merchants register their own webhook endpoints, but there is only one merchant here.
+
+### Webhook retry test timing
+
+The sender marks an event dead after three failed deliveries. Its e2e test asserts each claimed delivery, checks that attempts one and two remain live, and checks that attempt three marks the event dead. Test fixtures explicitly make settlement due using the database clock and webhook delivery due using the application clock. Mixing Postgres `now()` precision with JavaScript millisecond timestamps previously allowed a loop iteration to claim nothing. A regression test holds the application clock behind the database clock to reproduce that boundary without sleeps.

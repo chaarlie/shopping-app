@@ -74,6 +74,10 @@ describe('Webhook sender (e2e)', () => {
     answerWhen = Promise.resolve();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   afterAll(async () => {
     await app.close();
     await new Promise((resolve) => receiver.close(resolve));
@@ -96,7 +100,10 @@ describe('Webhook sender (e2e)', () => {
         },
       })
       .expect(202);
-    await settlement.runOnce();
+    await dataSource.query(
+      "UPDATE payments SET settle_at = now() - interval '1 second'",
+    );
+    expect(await settlement.runOnce()).toBe(1);
   };
 
   const outboxRow = async () => {
@@ -121,7 +128,9 @@ describe('Webhook sender (e2e)', () => {
     ).map((row) => row.status_code);
 
   const makeDue = () =>
-    dataSource.query('UPDATE outbox_events SET next_attempt_at = now()');
+    dataSource.query('UPDATE outbox_events SET next_attempt_at = $1', [
+      new Date(Date.now() - 1000),
+    ]);
 
   it('posts a settled payment as a signed webhook and marks it delivered', async () => {
     await settledPayment('key-webhook-ok');
@@ -168,9 +177,17 @@ describe('Webhook sender (e2e)', () => {
     await settledPayment('key-webhook-dead');
     answer = 500;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await sender.runOnce();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() - 1000);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
       await makeDue();
+      expect(await sender.runOnce()).toBe(1);
+      const current = await outboxRow();
+      expect(current.attempts).toBe(attempt);
+      if (attempt < 3) {
+        expect(current.dead_at).toBeNull();
+      }
     }
 
     const row = await outboxRow();
