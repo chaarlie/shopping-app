@@ -6,7 +6,7 @@ WORKDIR /repo
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
     pnpm install --frozen-lockfile --filter "webapp..."
-RUN pnpm --filter webapp build
+RUN pnpm --filter @shop/contracts build && pnpm --filter webapp build
 
 FROM node:24-alpine
 ENV NODE_ENV=production
