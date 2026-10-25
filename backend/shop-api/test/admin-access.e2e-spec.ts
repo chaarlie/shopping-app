@@ -23,6 +23,19 @@ describe('admin sessions', () => {
       .post('/api/admin/sign-in')
       .set('X-Forwarded-For', ip)
       .send({ email: 'test@example.test', password: 'test-password-123' });
+  it('requires a session for every catalog mutation and import history', async () => {
+    await request(app.getHttpServer())
+      .post('/api/products')
+      .send({})
+      .expect(401);
+    await request(app.getHttpServer())
+      .patch('/api/products/1')
+      .send({})
+      .expect(401);
+    await request(app.getHttpServer()).delete('/api/products/1').expect(401);
+    await request(app.getHttpServer()).post('/api/products/import').expect(401);
+    await request(app.getHttpServer()).get('/api/admin/session').expect(401);
+  });
   it('keeps browsing and checkout public', async () => {
     await request(app.getHttpServer()).get('/api/products').expect(200);
     await request(app.getHttpServer()).get('/api/categories').expect(200);
@@ -56,9 +69,14 @@ describe('admin sessions', () => {
       .set('Cookie', response.headers['set-cookie'])
       .expect(401);
   });
-  it('rejects another origin on sign-in', async () => {
+  it('rejects another origin even on sign-in and public checkout', async () => {
     await request(app.getHttpServer())
       .post('/api/admin/sign-in')
+      .set('Origin', 'https://evil.example')
+      .send({})
+      .expect(403);
+    await request(app.getHttpServer())
+      .post('/api/orders')
       .set('Origin', 'https://evil.example')
       .send({})
       .expect(403);

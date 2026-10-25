@@ -1,3 +1,4 @@
+import { SignedWebhook } from '../../admin/access.js';
 import {
   Body,
   Controller,
@@ -18,6 +19,7 @@ import {
   RecordPaymentEventCommand,
 } from '../commands/record-payment-event.command.js';
 
+@SignedWebhook()
 @Controller('webhooks/payments')
 export class PaymentWebhooksController {
   constructor(private readonly commandBus: CommandBus) {}

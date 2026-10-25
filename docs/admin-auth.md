@@ -9,3 +9,5 @@ Opaque sessions were chosen over JWTs so sign-out and account reprovisioning rev
 The sign-in, session and sign-out endpoints are implemented under `/api/admin`. Their controller requires a session except for sign-in, which is limited to five attempts per minute per client IP. Cookies are httpOnly and SameSite=Strict, with Secure controlled by the deployment cookie setting. `APP_ORIGIN` restricts browser writes. Global catalog protection follows separately.
 
 Existing catalog mutation tests now use explicit administrator sessions. Public read and checkout assertions remain independent of admin authorization; the next change enables the global guard.
+
+Global enforcement now protects catalog writes. Health, browsing, categories and guest checkout opt out explicitly. The internal signed payment webhook bypasses session and browser-origin checks, retaining its own signature guard. Unknown routes still return 404.

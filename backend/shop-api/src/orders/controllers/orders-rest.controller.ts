@@ -1,3 +1,4 @@
+import { Public } from '../../admin/access.js';
 import {
   Body,
   Controller,
@@ -34,6 +35,7 @@ import { OrderEventStream } from '../live/order-event-stream.js';
 import { PaymentAttemptSubmitter } from '../payments/payment-attempt-submitter.js';
 import { GetOrderQuery } from '../queries/get-order.query.js';
 
+@Public()
 @Controller('orders')
 export class OrdersRestController {
   constructor(
