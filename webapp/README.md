@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stockroom frontend
 
-## Getting Started
+Next.js route pages remain thin; feature components live under `src/app/components/{landing,catalog,checkout,admin}`. Shared browser utilities, typed API requests, cart storage and payment retry helpers live in `src/lib`. This follows the feature-oriented structure of Henrik's Apartments.
 
-First, run the development server:
+`src/app/globals.css` defines the Design D palette, semantic status colors, typography, spacing and radii. Inter Tight matches the mockup; `next/font/google` self-hosts it after downloading at build time. Offline builds would need a vendored licensed font.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The storefront uses real API data, category fallbacks, URL-based search/filter/sort/pagination, product details, cart and simulated checkout. Admin screens use a top navigation bar, product forms with version checks, and TanStack Table 9 editable import rows through typed table meta. Product names are always rendered as text.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run `pnpm --filter webapp dev --port 3107`. Development forwards `/api` to `SHOP_API_ORIGIN` (default `http://localhost:8080`); production uses nginx. Start the Docker stack first. Configure `APP_ORIGIN` on shop-api to include the frontend origin.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`pnpm --filter webapp test` covers precise decimal conversion, cart persistence validation and payment key reuse. Full browser journeys and responsive layouts must also be checked. HTTP errors remain visible, edits reload on stale versions, and checkout retries preserve unknown outcomes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Component boundaries
 
-## Learn More
+- Route pages choose the feature component and pass route parameters.
+- `catalog` owns browsing, search and product presentation.
+- `checkout` owns cart, payment forms and order display. `useOrder` owns event subscriptions, polling, cancellation and version ordering.
+- `admin` owns catalog management and import review. `useImportReview` owns mutations, validation, concurrency locks and reloads; `ImportTable` owns editable cell rendering.
+- Shared `lib` contains transport, formatting, persistence and input conversion; it does not own page markup.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Manual acceptance checks (user-owned): create/edit/delete a product, duplicate SKU correction, stale edit reload, import edits/exclusions and history, category/search/pagination, empty/error states, and desktop/phone layouts. The browser pass already confirmed sign-in, challenge CSV import, exact SKU search, cart, decline and successful retry. No further automated browser interaction is required by the user.
