@@ -19,6 +19,7 @@ flowchart LR
 - **So every write to a product's name, description, category or price must increase its `version`.** OpenSearch refuses a document whose version isn't higher than the one it holds, and the indexer counts that refusal as done, so a write that keeps the version would never reach the index. TypeORM's `save`, `update` and query builder updates increase it through `@VersionColumn`. Raw SQL, such as a bulk upsert, has to set `version = products.version + 1` itself.
 - **The index sits behind the alias `products`.** Its settings and mappings are versioned in code, in `product-index.definition.ts`, and `dynamic: strict` refuses any field the code doesn't declare.
   - On first start, the indexer creates the index and queues every product. It does the same if the index goes missing later.
+  - `pnpm --filter shop-api search:rebuild` builds a new index from Postgres, switches the alias to it, queues every product again to catch changes made in the meantime, and deletes the old index. In Docker, run `docker compose exec shop-api node dist/products/search/rebuild-search-index.js`.
 
 ## When OpenSearch is down
 
@@ -33,7 +34,7 @@ The e2e tests run against a real OpenSearch 3.5 in Testcontainers, shared by the
 |---|---|
 | `product-search-index.e2e-spec.ts` | Writing to the index: versions, deletes, unknown fields, an OpenSearch it can't reach |
 | `product-search-outbox.e2e-spec.ts` | Queuing product changes: what the trigger queues and with which version, claims and leases |
-| `product-search-sync.e2e-spec.ts` | The indexer: creates, renames, deletes, CSV imports and a missing index |
+| `product-search-sync.e2e-spec.ts` | The indexer and rebuilds: creates, renames, deletes, CSV imports, a missing index, a rebuild |
 | `product-search-unavailable.e2e-spec.ts` | shop-api pointed at an address with no OpenSearch: changes stay queued |
 
 **No test sleeps.** A test runs the indexer once instead of waiting for it.

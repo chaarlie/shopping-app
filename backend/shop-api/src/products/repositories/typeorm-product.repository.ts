@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
-import { In } from 'typeorm';
+import { In, MoreThan } from 'typeorm';
 import { TypeOrmGenericRepository } from '../../database/repository/typeorm/typeorm-generic.repository.js';
 import { ProductEntity } from '../entities/product.entity.js';
 import {
@@ -67,6 +67,14 @@ export class TypeOrmProductRepository
     }
 
     return this.repository.findBy({ id: In(ids) });
+  }
+
+  findAfter(afterId: number, limit: number): Promise<ProductEntity[]> {
+    return this.repository.find({
+      where: { id: MoreThan(afterId) },
+      order: { id: 'ASC' },
+      take: limit,
+    });
   }
 
   async changeStock(id: number, delta: number): Promise<boolean> {

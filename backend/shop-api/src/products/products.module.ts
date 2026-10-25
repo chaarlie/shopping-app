@@ -20,6 +20,8 @@ import { OpenSearchProductSearchIndex } from './search/opensearch-product-search
 import { ProductSearchIndex } from './search/product-search-index.js';
 import { ProductSearchIndexerJob } from './search/product-search-indexer.job.js';
 import { ProductSearchOutbox } from './search/product-search-outbox.js';
+import { ProductSearchRebuilder } from './search/product-search-rebuilder.js';
+import { FindProductsAfterQueryHandler } from './search/queries/handlers/find-products-after-query.handler.js';
 import { FindProductsByIdsQueryHandler } from './search/queries/handlers/find-products-by-ids-query.handler.js';
 import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outbox.js';
 
@@ -54,7 +56,9 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     ListProductsQueryHandler,
     ListCategoriesQueryHandler,
     FindProductsByIdsQueryHandler,
+    FindProductsAfterQueryHandler,
     ProductSearchIndexerJob,
+    ProductSearchRebuilder,
   ],
   exports: [ProductRepository],
 })
