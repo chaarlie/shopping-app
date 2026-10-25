@@ -35,9 +35,9 @@ describe('planProductImport with the challenge CSV', () => {
     expect(plan.ignoredColumns).toEqual([]);
   });
 
-  it('accepts 85 products and rejects 10 rows', () => {
-    expect(count('ready')).toBe(85);
-    expect(count('error')).toBe(10);
+  it('accepts 86 products and rejects 9 rows', () => {
+    expect(count('ready')).toBe(86);
+    expect(count('error')).toBe(9);
     expect(count('duplicate')).toBe(0);
   });
 
@@ -57,7 +57,9 @@ describe('planProductImport with the challenge CSV', () => {
 
   it('rejects rows with values it cannot trust', () => {
     expect(row(7).errors).toEqual(['Price "free" is not a valid amount']);
-    expect(row(16).errors).toEqual(['Stock cannot be negative']);
+    expect(row(16).errors).toEqual([]);
+    expect(row(16).product?.stock).toBe(0);
+    expect(row(16).warnings).toContain('-5 → 0 · order at least 5');
     expect(row(25).errors).toEqual(['Name is required']);
     expect(row(41).errors).toEqual(['Name is required']);
     expect(row(47).errors).toEqual(['Price must be greater than 0']);
@@ -137,7 +139,6 @@ describe('planProductImport edge cases', () => {
       'Name is required',
       'SKU must be 1 to 32 letters, digits or hyphens',
       'Price "abc" is not a valid amount',
-      'Stock cannot be negative',
       'Weight "heavy" is not a valid number of kilograms',
     ]);
   });

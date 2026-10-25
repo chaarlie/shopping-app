@@ -1,3 +1,5 @@
+import { ConflictError } from '../../../common/errors.js';
+import { isUniqueViolation } from '../../../database/errors.js';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Transactional } from '@nestjs-cls/transactional';
 import {
@@ -32,13 +34,29 @@ export class ImportProductsCommandHandler implements ICommandHandler<ImportProdu
 
     const existing = await this.products.findBySkusForUpdate(readySkus);
     const rows = matchExistingProducts(
-      plan.rows,
+      plan.rows.map((row) => {
+        const current =
+          row.product &&
+          existing.find((product) => product.sku === row.product?.sku);
+        return !options.updateStock && row.product && current
+          ? { ...row, product: { ...row.product, stock: current.stock } }
+          : row;
+      }),
       new Map(existing.map((product) => [product.sku, product])),
       options.onExisting,
     );
 
     if (!options.dryRun) {
-      await this.apply(rows);
+      try {
+        await this.apply(rows);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new ConflictError(
+            'The catalog changed during import. Preview the file again.',
+          );
+        }
+        throw error;
+      }
     }
 
     return toReport(plan, rows, options.dryRun);
