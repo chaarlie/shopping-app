@@ -65,3 +65,7 @@ Each case below is a question a product owner would normally answer. With no one
 - **The same name under different SKUs** (Running Shoes is both RS-001 and RS-050). The SKU identifies a product, so they're separate products.
 
 A zero price is rejected because the brief asks for purchases, not a free-product flow. The alternative would accept free products and skip payment; that requires a separate checkout policy. Negative inventory is clamped to zero rather than rejecting an otherwise usable product, with the original shortfall retained in the import report.
+
+## Saved review portal
+
+The [saved import portal](import-portal.md) stores immutable originals, records row edits and requires duplicate decisions before loading. The direct endpoint remains available for authenticated scripts.

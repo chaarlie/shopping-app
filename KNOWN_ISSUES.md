@@ -27,11 +27,11 @@ The example file has rows that look deliberately broken. The import handles each
 | 55, 68 | RS-050, BS-099 | Same names as RS-001 and BS-021 | Imported as separate products, because the SKU identifies a product |
 | 62, 63 | | Blank rows | Skipped and counted |
 
-That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. To bring in the rejected rows, fix them and import the whole file again: the 86 products already imported are reported as unchanged.
+That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. In the saved portal, correct or exclude rows before applying. Applied imports are immutable: further corrections require a new upload. Existing stock is preserved by default.
 
 ## Known bugs and limitations
 
-- **Administrators must be provisioned before catalog writes.** Product mutations require a valid admin session. The saved import portal is introduced separately.
+- **Administrators must be provisioned before catalog writes.** Product mutations require a valid admin session. The saved import portal requires the same session.
 - **Concurrent catalog changes require a fresh import preview.** A duplicate SKU created during loading returns 409 and rolls back the whole import. Existing stock is preserved unless the admin explicitly opts into updating it.
 - **Flagged payment events have no screen yet.** shop-api answers 200 for a webhook it records but can't apply, such as an amount that doesn't match its order or a second successful payment for an order that is already paid, so payments-api stops resending it. Those events are logged as errors and kept in `processed_payment_events` with the outcome `flagged` and the reason, and a person has to look them up there and refund or fix the order by hand.
 - **A late payment can be missed if all its webhooks fail.** If a payment succeeds after its order was cancelled, and all three deliveries of its webhook fail, shop-api never hears of it, because the reconciliation job only asks about pending orders. The customer is charged for a cancelled order, and the dead event in payments-api's `outbox_events` is the only trace. It needs the order to be cancelled within the seconds a payment is processing, and shop-api to be down for the next 35 seconds. There is no command to resend a dead event yet.
