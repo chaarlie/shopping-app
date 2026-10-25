@@ -92,6 +92,13 @@ export class TypeOrmOrderRepository implements OrderRepository {
     return affected === 1;
   }
 
+  async deferReconciliation(id: number): Promise<void> {
+    await this.manager.query(
+      "UPDATE orders SET reconcile_after=now()+interval '1 minute' WHERE id=$1",
+      [id],
+    );
+  }
+
   async touch(id: number): Promise<void> {
     await this.manager
       .createQueryBuilder()

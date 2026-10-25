@@ -198,4 +198,49 @@ describe('Order reconciliation (e2e)', () => {
     expect((await orderOf(order)).status).toBe('refunded');
     expect(payments.refunds).toEqual([payment.id]);
   });
+  it('recovers a late success after cancellation when every webhook was lost', async () => {
+    const order = await placeOrder();
+    const [payment] = payments.payments.splice(0);
+    await makeDue();
+    await job.runOnce();
+    expect((await orderOf(order)).status).toBe('cancelled');
+    expect(await stock()).toBe(5);
+    payment.status = 'succeeded';
+    payments.payments.push(payment);
+    await job.runOnce();
+    await job.runOnce();
+    expect((await orderOf(order)).status).toBe('paid');
+    expect(await stock()).toBe(3);
+  });
+
+  it('refunds a lost late success when cancelled stock has already been sold', async () => {
+    const order = await placeOrder();
+    const [payment] = payments.payments.splice(0);
+    await makeDue();
+    await job.runOnce();
+    await dataSource.query('UPDATE products SET stock=0,version=version+1');
+    payment.status = 'succeeded';
+    payments.payments.push(payment);
+    await job.runOnce();
+    expect((await orderOf(order)).status).toBe('refund_pending');
+    await job.runOnce();
+    await job.runOnce();
+    expect((await orderOf(order)).status).toBe('refunded');
+    expect(payments.refunds).toEqual([payment.id]);
+    expect(await stock()).toBe(0);
+  });
+
+  it('defers unresolved cancelled orders so one batch cannot monopolize reconciliation', async () => {
+    const order = await placeOrder();
+    payments.payments.splice(0);
+    await makeDue();
+    await job.runOnce();
+    await job.runOnce();
+    const [{ deferred }] = await dataSource.query(
+      'SELECT reconcile_after>now() AS deferred FROM orders',
+    );
+    expect(deferred).toBe(true);
+    expect((await orderOf(order)).status).toBe('cancelled');
+    expect(await stock()).toBe(5);
+  });
 });
