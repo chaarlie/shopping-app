@@ -14,6 +14,7 @@ describe('validateEnv', () => {
   it('fills in the defaults', () => {
     expect(validateEnv(required)).toEqual({
       ...required,
+      APP_ORIGIN: 'http://localhost:8080',
       PORT: 3000,
       ORDER_COOKIE_SECURE: true,
       OPENSEARCH_INDEX: 'products',

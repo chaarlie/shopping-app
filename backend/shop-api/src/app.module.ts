@@ -1,3 +1,4 @@
+import { AdminModule } from './admin/admin.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
@@ -18,6 +19,7 @@ import { OpenSearchModule } from './search/opensearch.module.js';
     }),
     CqrsModule.forRoot(),
     DatabaseModule,
+    AdminModule,
     OpenSearchModule,
     HealthModule,
     ProductsModule,

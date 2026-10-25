@@ -5,3 +5,5 @@ Named administrators are provisioned with `pnpm --filter shop-api admin:bootstra
 Passwords use salted Node scrypt hashes. Only SHA-256 digests of random session tokens are stored. Sessions expire after eight hours. The storage migration is introduced before route enforcement so each change remains independently buildable; protection is enabled in the following PRs.
 
 Opaque sessions were chosen over JWTs so sign-out and account reprovisioning revoke access immediately. Native password dependencies are avoided because their build scripts require additional package-manager configuration.
+
+The sign-in, session and sign-out endpoints are implemented under `/api/admin`. Their controller requires a session except for sign-in, which is limited to five attempts per minute per client IP. Cookies are httpOnly and SameSite=Strict, with Secure controlled by the deployment cookie setting. `APP_ORIGIN` restricts browser writes. Global catalog protection follows separately.
