@@ -1,0 +1,7 @@
+# Admin authentication
+
+Named administrators are provisioned with `pnpm --filter shop-api admin:bootstrap` after building and running migrations. Set `DATABASE_URL`, `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the command environment. Repeating the command updates the account and revokes its existing sessions; there is no public sign-up.
+
+Passwords use salted Node scrypt hashes. Only SHA-256 digests of random session tokens are stored. Sessions expire after eight hours. The storage migration is introduced before route enforcement so each change remains independently buildable; protection is enabled in the following PRs.
+
+Opaque sessions were chosen over JWTs so sign-out and account reprovisioning revoke access immediately. Native password dependencies are avoided because their build scripts require additional package-manager configuration.
