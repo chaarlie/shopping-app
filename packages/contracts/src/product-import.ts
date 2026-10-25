@@ -17,6 +17,10 @@ export const productImportOptionsSchema = z.strictObject({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  updateStock: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   onExisting: z.enum(['update', 'skip']).default('update'),
 });
 
