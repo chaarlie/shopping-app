@@ -4,7 +4,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/app.setup.js';
-import { seedAdmin } from './admin-fixture.js';
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 describe('admin sessions', () => {
   let app: INestApplication;
   beforeAll(async () => {
@@ -95,5 +95,26 @@ describe('admin sessions', () => {
       .send({ email: 'unknown@example.test', password: 'wrong' })
       .expect(429);
     await login('192.0.2.11').expect(200);
+  });
+  it('lists and filters reorder products without using the search index', async () => {
+    await seedAdmin(app);
+    await app
+      .get(DataSource)
+      .query(
+        "INSERT INTO products(sku,name,category,price_cents,stock) VALUES('ADMIN-ZERO','Admin listing test zero','Kitchen',100,0),('ADMIN-STOCK','Admin listing test stocked','Kitchen',100,3)",
+      );
+    await request(app.getHttpServer()).get('/api/admin/products').expect(401);
+    const { body } = await adminRequest(app)
+      .get(
+        '/api/admin/products?q=Admin%20listing%20test&reorder=true&pageSize=14',
+      )
+      .expect(200);
+    expect(body.total).toBe(1);
+    expect(body.items[0]).toMatchObject({ sku: 'ADMIN-ZERO', stock: 0 });
+    const { body: all } = await adminRequest(app)
+      .get('/api/admin/products?q=Admin%20listing%20test&pageSize=1&page=2')
+      .expect(200);
+    expect(all.total).toBe(2);
+    expect(all.items).toHaveLength(1);
   });
 });
