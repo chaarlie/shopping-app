@@ -13,3 +13,9 @@ export interface ProductIndexChange {
   version: number;
   document: ProductSearchDocument | null;
 }
+
+export interface QueuedProductChange {
+  id: string;
+  productId: number;
+  version: number;
+}
