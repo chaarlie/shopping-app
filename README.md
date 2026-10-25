@@ -12,6 +12,18 @@ docker compose up --build
 
 Then open http://localhost:8080. The API is served under http://localhost:8080/api, and http://localhost:8080/api/health reports whether it is up.
 
+## Searching through the API
+
+Import the example file, then search it. The first search can take a second while the index fills:
+
+```sh
+curl -s -X POST localhost:8080/api/products/import -F "file=@backend/Code Challenge E-Commerce.csv"
+
+curl -s 'localhost:8080/api/products?q=runing%20shoes'
+curl -s 'localhost:8080/api/products?q=wireless&category=Electronics&sort=price_asc'
+curl -s localhost:8080/api/categories
+```
+
 ## Buying through the API
 
 Until the checkout screens exist, a purchase can be made with curl. Payments only accept the simulated gateway's test cards:
@@ -52,11 +64,13 @@ shasum -a 256 "backend/Code Challenge E-Commerce.csv"
 - [Architecture](docs/architecture.md): the containers, what each one can reach, and what is built so far.
 - [Product import](docs/product-import.md): how each CSV row is accepted, fixed or rejected.
 - [Checkout flow](docs/checkout-flow.md): how shop-api and payments-api settle a purchase with signed webhooks and live updates, including declines, expired orders and late payments.
+- [Product search](docs/product-search.md): what search finds, how the OpenSearch index stays in step with Postgres, and what happens when OpenSearch is down.
 
 ## Decisions
 
 - **CSV import.** Rows that disagree about a SKU are rejected rather than guessed, products that already exist are updated, and stock is set rather than added, so importing the same file twice changes nothing. [Product import](docs/product-import.md#decisions) explains each choice and the alternatives.
 - **Payment results.** payments-api reports each payment to shop-api as a signed webhook, sent from an outbox that retries until shop-api confirms, the way a payment gateway reports to a merchant. RabbitMQ between the services was the alternative. [Checkout flow](docs/checkout-flow.md#decisions) explains the choice.
+- **Search.** OpenSearch ranks results and forgives typos, and a database trigger fills an outbox that keeps its index in step with Postgres. What a search shows is read back from Postgres, so prices and stock are never stale. OpenSearch was chosen over Elasticsearch to match Amazon's managed service, and over Postgres trigram search for ranking and analyzers. [Product search](docs/product-search.md#decisions) explains the choices.
 
 ## Known issues
 

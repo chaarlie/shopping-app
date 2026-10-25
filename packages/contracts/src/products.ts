@@ -97,7 +97,10 @@ export const productPageSchema = pageSchema(productSchema);
 
 export type ProductPage = z.infer<typeof productPageSchema>;
 
+export const maxSearchResults = 10_000;
+
 export const productSortSchema = z.enum([
+  'relevance',
   'name',
   'price_asc',
   'price_desc',
@@ -106,10 +109,21 @@ export const productSortSchema = z.enum([
 
 export type ProductSort = z.infer<typeof productSortSchema>;
 
-export const productSearchQuerySchema = pageQuerySchema.extend({
-  category: categorySchema.optional(),
-  sort: productSortSchema.optional(),
-});
+export const productSearchQuerySchema = pageQuerySchema
+  .extend({
+    q: z
+      .string()
+      .trim()
+      .min(1, 'Type something to search for')
+      .max(100, 'Search text must be at most 100 characters')
+      .optional(),
+    category: categorySchema.optional(),
+    sort: productSortSchema.optional(),
+  })
+  .refine(({ page, pageSize }) => page * pageSize <= maxSearchResults, {
+    error: `Search shows at most the first ${maxSearchResults} results. Narrow the search to see more.`,
+    path: ['page'],
+  });
 
 export type ProductSearchQuery = z.infer<typeof productSearchQuerySchema>;
 

@@ -7,6 +7,7 @@ import { toProduct } from '../../product.mapper.js';
 import { ListProductsQuery } from '../list-products.query.js';
 
 const orderings: Record<ProductSort, [string, 'ASC' | 'DESC']> = {
+  relevance: ['product.name', 'ASC'],
   name: ['product.name', 'ASC'],
   price_asc: ['product.priceCents', 'ASC'],
   price_desc: ['product.priceCents', 'DESC'],
