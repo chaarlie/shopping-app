@@ -1,9 +1,10 @@
+import type { Response } from 'supertest';
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { PaymentEvent } from '@shop/contracts';
 import { signPayload } from '@shop/webhook-signature';
 import { randomUUID } from 'node:crypto';
-import request, { Response } from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -41,6 +42,7 @@ describe('Payment webhooks (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication({ rawBody: true }));
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
   });
 
@@ -56,7 +58,7 @@ describe('Payment webhooks (e2e)', () => {
   });
 
   const placeOrder = async (stock = 5): Promise<PlacedOrder> => {
-    const product = await request(app.getHttpServer())
+    const product = await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-001',
@@ -66,7 +68,7 @@ describe('Payment webhooks (e2e)', () => {
         stock,
       })
       .expect(201);
-    const response: Response = await request(app.getHttpServer())
+    const response: Response = await adminRequest(app)
       .post('/api/orders')
       .set('Idempotency-Key', 'key-webhook-order')
       .send({
@@ -115,7 +117,7 @@ describe('Payment webhooks (e2e)', () => {
   ) => {
     const body = JSON.stringify(event);
 
-    return request(app.getHttpServer())
+    return adminRequest(app)
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
       .set(signPayload(body, signWith, JSON.parse(body).id, timestamp))
@@ -124,7 +126,7 @@ describe('Payment webhooks (e2e)', () => {
 
   const orderOf = async ({ reference, cookie }: PlacedOrder) =>
     (
-      await request(app.getHttpServer())
+      await adminRequest(app)
         .get(`/api/orders/${reference}`)
         .set('Cookie', cookie)
         .expect(200)
@@ -141,7 +143,7 @@ describe('Payment webhooks (e2e)', () => {
     const order = await placeOrder();
     const body = JSON.stringify(succeededFor(order));
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/api/webhooks/payments')
       .set('Content-Type', 'application/json')
       .set(signPayload(body, secret, JSON.parse(body).id))
@@ -154,7 +156,7 @@ describe('Payment webhooks (e2e)', () => {
     const event = succeededFor(order);
     const body = JSON.stringify(event);
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
       .send(body)
@@ -165,7 +167,7 @@ describe('Payment webhooks (e2e)', () => {
     await deliver(event, {
       timestamp: Math.floor(Date.now() / 1000) - 301,
     }).expect(401);
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
       .set(signPayload(body, secret, JSON.parse(body).id))
@@ -181,7 +183,7 @@ describe('Payment webhooks (e2e)', () => {
     const order = await placeOrder();
     const body = JSON.stringify(succeededFor(order));
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
       .set(signPayload(body, secret, randomUUID()))

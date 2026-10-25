@@ -1,4 +1,4 @@
-import request from 'supertest';
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
@@ -26,6 +26,7 @@ describe('Product import (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
   });
 
@@ -38,7 +39,7 @@ describe('Product import (e2e)', () => {
   });
 
   const upload = (csv: string, query = '') =>
-    request(app.getHttpServer())
+    adminRequest(app)
       .post(`/api/products/import${query}`)
       .attach('file', Buffer.from(csv), {
         filename: 'products.csv',
@@ -147,7 +148,7 @@ describe('Product import (e2e)', () => {
   });
 
   it('rejects a request without a file', () => {
-    return request(app.getHttpServer())
+    return adminRequest(app)
       .post('/api/products/import')
       .expect(400);
   });

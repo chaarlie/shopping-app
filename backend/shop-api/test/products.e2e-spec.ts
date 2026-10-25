@@ -1,6 +1,6 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -27,6 +27,7 @@ describe('Products (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
   });
 
@@ -39,7 +40,7 @@ describe('Products (e2e)', () => {
   });
 
   const createProduct = (body: object) =>
-    request(app.getHttpServer()).post('/api/products').send(body);
+    adminRequest(app).post('/api/products').send(body);
 
   it('creates a product and normalizes its SKU', async () => {
     const { body } = await createProduct(runningShoes).expect(201);
@@ -86,15 +87,13 @@ describe('Products (e2e)', () => {
   it('returns a product by id', async () => {
     await createProduct(runningShoes).expect(201);
 
-    const { body } = await request(app.getHttpServer())
-      .get('/api/products/1')
-      .expect(200);
+    const { body } = await adminRequest(app).get('/api/products/1').expect(200);
 
     expect(body.sku).toBe('RS-001');
   });
 
   it('returns 404 for a product that does not exist', () => {
-    return request(app.getHttpServer()).get('/api/products/999').expect(404);
+    return adminRequest(app).get('/api/products/999').expect(404);
   });
 
   it('lists products in pages, sorted by name', async () => {
@@ -102,7 +101,7 @@ describe('Products (e2e)', () => {
     await createProduct({ ...runningShoes, sku: 'A-2', name: 'Air Purifier' });
     await createProduct({ ...runningShoes, sku: 'A-3', name: 'Backpack' });
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .get('/api/products?page=1&pageSize=2')
       .expect(200);
 
@@ -117,7 +116,7 @@ describe('Products (e2e)', () => {
     await createProduct(runningShoes);
     await createProduct({ ...runningShoes, sku: 'B-1', category: 'Kitchen' });
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .get('/api/products?category=Kitchen')
       .expect(200);
 
@@ -147,9 +146,7 @@ describe('Products (e2e)', () => {
 
     const namesSortedBy = async (sort: string) =>
       (
-        await request(app.getHttpServer())
-          .get(`/api/products?sort=${sort}`)
-          .expect(200)
+        await adminRequest(app).get(`/api/products?sort=${sort}`).expect(200)
       ).body.items.map((item: { name: string }) => item.name);
 
     expect(await namesSortedBy('price_asc')).toEqual([
@@ -170,9 +167,7 @@ describe('Products (e2e)', () => {
   });
 
   it('rejects a sort it does not know', () => {
-    return request(app.getHttpServer())
-      .get('/api/products?sort=popularity')
-      .expect(400);
+    return adminRequest(app).get('/api/products?sort=popularity').expect(400);
   });
 
   it('lists categories with their product counts', async () => {
@@ -180,9 +175,7 @@ describe('Products (e2e)', () => {
     await createProduct({ ...runningShoes, sku: 'A-2' });
     await createProduct({ ...runningShoes, sku: 'B-1', category: 'Kitchen' });
 
-    const { body } = await request(app.getHttpServer())
-      .get('/api/categories')
-      .expect(200);
+    const { body } = await adminRequest(app).get('/api/categories').expect(200);
 
     expect(body.items).toEqual([
       { name: 'Footwear', productCount: 2 },
@@ -193,7 +186,7 @@ describe('Products (e2e)', () => {
   it('updates a product when the version matches', async () => {
     await createProduct(runningShoes).expect(201);
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .patch('/api/products/1')
       .send({ stock: 120, version: 1 })
       .expect(200);
@@ -207,25 +200,23 @@ describe('Products (e2e)', () => {
 
   it('rejects an update based on an old version', async () => {
     await createProduct(runningShoes).expect(201);
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch('/api/products/1')
       .send({ stock: 120, version: 1 })
       .expect(200);
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch('/api/products/1')
       .send({ stock: 999, version: 1 })
       .expect(409);
 
-    const { body } = await request(app.getHttpServer())
-      .get('/api/products/1')
-      .expect(200);
+    const { body } = await adminRequest(app).get('/api/products/1').expect(200);
 
     expect(body.stock).toBe(120);
   });
 
   it('returns 404 when updating a product that does not exist', () => {
-    return request(app.getHttpServer())
+    return adminRequest(app)
       .patch('/api/products/999')
       .send({ stock: 1, version: 1 })
       .expect(404);
@@ -234,8 +225,8 @@ describe('Products (e2e)', () => {
   it('deletes a product', async () => {
     await createProduct(runningShoes).expect(201);
 
-    await request(app.getHttpServer()).delete('/api/products/1').expect(204);
-    await request(app.getHttpServer()).get('/api/products/1').expect(404);
-    await request(app.getHttpServer()).delete('/api/products/1').expect(404);
+    await adminRequest(app).delete('/api/products/1').expect(204);
+    await adminRequest(app).get('/api/products/1').expect(404);
+    await adminRequest(app).delete('/api/products/1').expect(404);
   });
 });

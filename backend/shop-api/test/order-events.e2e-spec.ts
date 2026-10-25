@@ -1,10 +1,10 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { signPayload } from '@shop/webhook-signature';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -113,6 +113,7 @@ describe('Order events over SSE (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication({ rawBody: true }));
     await app.listen(0, '127.0.0.1');
+    await seedAdmin(app);
     const server = app.getHttpServer() as unknown as Server;
     const { port } = server.address() as AddressInfo;
     baseUrl = `http://127.0.0.1:${port}`;
@@ -124,7 +125,7 @@ describe('Order events over SSE (e2e)', () => {
       'TRUNCATE products, orders, processed_payment_events RESTART IDENTITY CASCADE',
     );
     payments.reset();
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-001',
@@ -147,7 +148,7 @@ describe('Order events over SSE (e2e)', () => {
 
   const placeOrder = async (): Promise<PlacedOrder> => {
     const key = `key-events-${randomUUID()}`;
-    const response = await request(app.getHttpServer())
+    const response = await adminRequest(app)
       .post('/api/orders')
       .set('Idempotency-Key', key)
       .send({
@@ -216,7 +217,7 @@ describe('Order events over SSE (e2e)', () => {
           : data,
     });
 
-    return request(app.getHttpServer())
+    return adminRequest(app)
       .post('/webhooks/payments')
       .set('Content-Type', 'application/json')
       .set(signPayload(body, secret, JSON.parse(body).id))

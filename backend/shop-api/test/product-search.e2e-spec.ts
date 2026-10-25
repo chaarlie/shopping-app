@@ -1,6 +1,6 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -32,6 +32,7 @@ describe('Product search (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
     indexer = app.get(ProductSearchIndexerJob);
     index = app.get(ProductSearchIndex);
@@ -58,7 +59,7 @@ describe('Product search (e2e)', () => {
     ...fields
   }: ProductFields) =>
     (
-      await request(app.getHttpServer())
+      await adminRequest(app)
         .post('/api/products')
         .send({ category, priceCents, stock, description, ...fields })
         .expect(201)
@@ -70,12 +71,8 @@ describe('Product search (e2e)', () => {
   };
 
   const search = async (query: Record<string, string>) =>
-    (
-      await request(app.getHttpServer())
-        .get('/api/products')
-        .query(query)
-        .expect(200)
-    ).body as {
+    (await adminRequest(app).get('/api/products').query(query).expect(200))
+      .body as {
       items: { sku: string; name: string; stock: number; priceCents: number }[];
       total: number;
     };
@@ -174,7 +171,7 @@ describe('Product search (e2e)', () => {
     const shoes = await addProduct({ sku: 'RS-1', name: 'Running Shoes' });
     await sync();
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch(`/api/products/${shoes.id}`)
       .send({ stock: 1, priceCents: 7500, version: shoes.version })
       .expect(200);

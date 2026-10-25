@@ -1,7 +1,7 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -32,6 +32,7 @@ describe('Order reconciliation (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
     job = app.get(OrderReconciliationJob);
   });
@@ -41,7 +42,7 @@ describe('Order reconciliation (e2e)', () => {
       'TRUNCATE products, orders RESTART IDENTITY CASCADE',
     );
     payments.reset();
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-001',
@@ -59,7 +60,7 @@ describe('Order reconciliation (e2e)', () => {
   });
 
   const placeOrder = async (): Promise<PlacedOrder> => {
-    const response = await request(app.getHttpServer())
+    const response = await adminRequest(app)
       .post('/api/orders')
       .set('Idempotency-Key', `key-reconcile-${randomUUID()}`)
       .send({
@@ -84,7 +85,7 @@ describe('Order reconciliation (e2e)', () => {
 
   const orderOf = async ({ reference, cookie }: PlacedOrder) =>
     (
-      await request(app.getHttpServer())
+      await adminRequest(app)
         .get(`/api/orders/${reference}`)
         .set('Cookie', cookie)
         .expect(200)

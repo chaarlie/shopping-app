@@ -1,7 +1,7 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { Test } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -22,6 +22,7 @@ describe('Product search outbox (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
     commandBus = app.get(CommandBus);
   });
@@ -38,14 +39,14 @@ describe('Product search outbox (e2e)', () => {
 
   const addProduct = async (sku: string, name: string) =>
     (
-      await request(app.getHttpServer())
+      await adminRequest(app)
         .post('/api/products')
         .send({ sku, name, category: 'Footwear', priceCents: 1000, stock: 5 })
         .expect(201)
     ).body as { id: number; version: number };
 
   const importCsv = (row: string) =>
-    request(app.getHttpServer())
+    adminRequest(app)
       .post('/api/products/import')
       .attach(
         'file',
@@ -66,13 +67,11 @@ describe('Product search outbox (e2e)', () => {
 
   it('queues every create, edit and delete with the version the index should get', async () => {
     const shoes = await addProduct('RS-1', 'Running Shoes');
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch(`/api/products/${shoes.id}`)
       .send({ name: 'Trail Shoes', version: shoes.version })
       .expect(200);
-    await request(app.getHttpServer())
-      .delete(`/api/products/${shoes.id}`)
-      .expect(204);
+    await adminRequest(app).delete(`/api/products/${shoes.id}`).expect(204);
 
     expect(await queued()).toEqual([
       { productId: shoes.id, version: 1 },
@@ -83,7 +82,7 @@ describe('Product search outbox (e2e)', () => {
 
   it('leaves stock changes out, since the index has no stock', async () => {
     const shoes = await addProduct('RS-1', 'Running Shoes');
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch(`/api/products/${shoes.id}`)
       .send({ stock: 1, version: shoes.version })
       .expect(200);

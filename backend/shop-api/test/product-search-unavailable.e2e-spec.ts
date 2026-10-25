@@ -1,6 +1,6 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import type { ProductSearchIndexerJob } from './../src/products/search/product-search-indexer.job.js';
@@ -23,6 +23,7 @@ describe('Product search while OpenSearch is down (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
     indexer = app.get(jobs.ProductSearchIndexerJob);
   });
@@ -38,7 +39,7 @@ describe('Product search while OpenSearch is down (e2e)', () => {
   });
 
   it('answers 503 for a search and keeps browsing and editing working', async () => {
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-1',
@@ -49,21 +50,21 @@ describe('Product search while OpenSearch is down (e2e)', () => {
       })
       .expect(201);
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .get('/api/products?q=running')
       .expect(503);
     expect(body.message).toBe(
       'Search is unavailable right now. Browse by category instead.',
     );
 
-    const browse = await request(app.getHttpServer())
+    const browse = await adminRequest(app)
       .get('/api/products?category=Footwear')
       .expect(200);
     expect(browse.body.total).toBe(1);
   });
 
   it('keeps product changes queued until OpenSearch is back', async () => {
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-1',
