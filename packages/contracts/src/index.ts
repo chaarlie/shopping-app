@@ -5,3 +5,5 @@ export * from './payment-events.js';
 export * from './payments.js';
 export * from './product-import.js';
 export * from './products.js';
+export * from './admin.js';
+export * from './import-portal.js';
