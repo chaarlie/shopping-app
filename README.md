@@ -111,3 +111,5 @@ CSV imports preserve existing stock unless `updateStock=true` is supplied. Negat
 Admin provisioning and session design are described in [admin authentication](docs/admin-auth.md).
 
 The [saved import portal](docs/import-portal.md) stores uploaded CSVs, paginated previews and audited row corrections before applying changes. Admins must resolve conflicting SKUs; invalid rows stay in history.
+
+The import review places validation messages beside each row's actions, labels conflicting duplicates explicitly, and offers a “Show rows to fix” filter. Comparing a SKU highlights different values; the admin still chooses which versions to exclude. This keeps resolution explicit rather than silently selecting the last row.

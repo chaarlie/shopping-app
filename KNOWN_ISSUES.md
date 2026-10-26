@@ -42,3 +42,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - **The search index isn't ready for a cluster yet.** It has no replicas, which suits the single local node, and OpenSearch runs without its security plugin. On Amazon OpenSearch Service, the index needs at least one replica and requests need HTTPS with SigV4 signing, which the client supports but which isn't wired up.
 
 - **Cancelled orders with unresolved attempts remain eligible for reconciliation.** They are rechecked no more than once per minute after a successful lookup; this favors recovery over silently abandoning an unknown payment. A larger deployment would need an explicit operational retention and investigation policy.
+
+- **Import review usability:** errors and actions are grouped together, with explicit duplicate labels and a needs-attention shortcut. Desktop and phone visual acceptance of this refinement remains with the user. Difference highlights compare rows on the current page; large duplicate groups may span pages.
