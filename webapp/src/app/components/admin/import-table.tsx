@@ -58,16 +58,58 @@ const columns: ColumnDef<typeof features, StagedRow>[] = [
   { id: 'row', header: 'Row', accessorKey: 'row' },
   {
     id: 'status',
-    header: 'Status / decision',
+    header: 'Review & actions',
     cell: ({ row, table }) => (
-      <div className="stack">
-        <strong>{row.original.status}</strong>
+      <div className="import-row-review">
+        <strong
+          className={`import-status import-status-${row.original.status}`}
+        >
+          {row.original.excluded
+            ? 'Excluded from import'
+            : row.original.errors.some((error) =>
+                  error.includes('appears on rows'),
+                )
+              ? 'Conflicting duplicate'
+              : row.original.status === 'error'
+                ? 'Needs correction'
+                : row.original.status === 'create'
+                  ? 'New product'
+                  : row.original.status === 'update'
+                    ? 'Product update'
+                    : row.original.status === 'duplicate'
+                      ? 'Identical duplicate · skipped'
+                      : row.original.status === 'unchanged'
+                        ? 'No changes'
+                        : 'Skipped'}
+        </strong>
+        <strong>
+          {row.original.values.sku || 'Missing SKU'} · Row {row.original.row}
+        </strong>
+        {row.original.errors.map((error) => (
+          <p className="error-text" key={error}>
+            {error}
+          </p>
+        ))}
+        {row.original.warnings.map((warning) => (
+          <p className="import-warning" key={warning}>
+            {warning}
+          </p>
+        ))}
+        {!row.original.excluded && row.original.status === 'error' && (
+          <p>
+            {row.original.errors.some((error) =>
+              error.includes('appears on rows'),
+            )
+              ? 'Compare the matching rows, then exclude the versions you do not want. Keep one version per SKU.'
+              : 'Edit the incorrect value in this row. If left unresolved, this row will be skipped.'}
+          </p>
+        )}
         {!table.options.meta?.disabled && (
           <button
             className="btn-grey"
             onClick={() => table.options.meta?.exclude(row.original)}
           >
-            {row.original.excluded ? 'Include' : 'Exclude'}
+            {row.original.excluded ? 'Restore row' : 'Exclude this row'}
           </button>
         )}
         {row.original.errors.some((e) => e.includes('appears on rows')) && (
@@ -75,7 +117,7 @@ const columns: ColumnDef<typeof features, StagedRow>[] = [
             className="btn-grey"
             onClick={() => table.options.meta?.compare(row.original.values.sku)}
           >
-            Compare SKU
+            Compare matching rows
           </button>
         )}
       </div>
@@ -101,17 +143,9 @@ const columns: ColumnDef<typeof features, StagedRow>[] = [
   ),
   {
     id: 'notes',
-    header: 'Review notes',
+    header: 'Catalog changes & audit',
     cell: ({ row }) => (
       <div className="row-notes">
-        {row.original.errors.map((e) => (
-          <p className="error-text" key={e}>
-            {e}
-          </p>
-        ))}
-        {row.original.warnings.map((w) => (
-          <p key={w}>{w}</p>
-        ))}
         {row.original.changes.map((c) => (
           <p className="change" key={c.field}>
             <strong>{c.field}</strong>
@@ -145,7 +179,14 @@ export default function ImportTable({
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>
               {group.headers.map((header) => (
-                <th key={header.id}>
+                <th
+                  key={header.id}
+                  className={
+                    header.column.id === 'status'
+                      ? 'import-review-column'
+                      : undefined
+                  }
+                >
                   <table.FlexRender header={header} />
                 </th>
               ))}
@@ -168,20 +209,24 @@ export default function ImportTable({
                 <td
                   key={cell.id}
                   className={
-                    productCsvColumns.includes(
-                      cell.column.id as ProductCsvColumn,
-                    ) &&
-                    rows.some(
-                      (other) =>
-                        other.values.sku.trim().toUpperCase() ===
-                          row.original.values.sku.trim().toUpperCase() &&
-                        other.values[cell.column.id as ProductCsvColumn] !==
-                          row.original.values[
-                            cell.column.id as ProductCsvColumn
-                          ],
-                    )
-                      ? 'cell-difference'
-                      : undefined
+                    cell.column.id === 'status'
+                      ? 'import-review-column'
+                      : productCsvColumns.includes(
+                            cell.column.id as ProductCsvColumn,
+                          ) &&
+                          rows.some(
+                            (other) =>
+                              other.values.sku.trim().toUpperCase() ===
+                                row.original.values.sku.trim().toUpperCase() &&
+                              other.values[
+                                cell.column.id as ProductCsvColumn
+                              ] !==
+                                row.original.values[
+                                  cell.column.id as ProductCsvColumn
+                                ],
+                          )
+                        ? 'cell-difference'
+                        : undefined
                   }
                 >
                   <table.FlexRender cell={cell} />

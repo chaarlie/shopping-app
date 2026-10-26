@@ -42,6 +42,9 @@ function AdminGate({ children }: { children: React.ReactNode }) {
         <Link href="/admin/products">Products</Link>
         <Link href="/admin/imports">Import history</Link>
         <Link href="/admin/imports/new">Import CSV</Link>
+        <Link className="btn-grey" href="/">
+          View storefront
+        </Link>
         <span>{state.data.name}</span>
         <button
           className="btn-grey"

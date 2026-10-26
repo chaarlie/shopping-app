@@ -69,3 +69,7 @@ A zero price is rejected because the brief asks for purchases, not a free-produc
 ## Saved review portal
 
 The [saved import portal](import-portal.md) stores immutable originals, records row edits and requires duplicate decisions before loading. The direct endpoint remains available for authenticated scripts.
+
+### Review guidance
+
+The review screen groups each row's validation errors, warnings and actions in the first review column. Conflicting duplicates are labeled separately from invalid values. Use “Show rows to fix” to filter the saved preview, then “Compare matching rows” to inspect a SKU. Yellow cells identify differences among the rows on the current page; exclude unwanted versions or correct their values. Editable fields have visible borders and save on blur. The review column stays visible during horizontal scrolling on desktop; on narrow screens it scrolls with the table so it does not obscure the fields. Catalog changes and edit attribution remain in the final column.

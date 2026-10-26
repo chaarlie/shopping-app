@@ -63,6 +63,31 @@ export default function ImportReview({ id }: { id: string }) {
           </span>
         </div>
       </div>
+      {!summary.appliedAt && (counts.error || 0) > 0 && (
+        <section
+          className="import-attention"
+          aria-label="Import needs attention"
+        >
+          <div>
+            <h2>{counts.error} rows need your attention</h2>
+            <p>
+              Conflicting duplicates block this import. Other invalid rows are
+              skipped until corrected. Each row explains the issue and what to
+              do next.
+            </p>
+          </div>
+          <button
+            className="btn-grey"
+            onClick={() => {
+              setSku('');
+              setStatus('error');
+              setPage(1);
+            }}
+          >
+            Show rows to fix
+          </button>
+        </section>
+      )}
       <div className="panel stack">
         <p>
           Cells save when you leave them. Conflicting SKUs must be resolved:
@@ -135,22 +160,38 @@ export default function ImportReview({ id }: { id: string }) {
               'excluded',
             ].map((s) => (
               <option value={s} key={s}>
-                {s}
+                {
+                  {
+                    all: 'All rows',
+                    create: 'New products',
+                    update: 'Product updates',
+                    unchanged: 'No changes',
+                    duplicate: 'Identical duplicates',
+                    error: 'Needs attention',
+                    excluded: 'Excluded rows',
+                  }[s]
+                }
               </option>
             ))}
           </select>
         </label>
         {sku && (
-          <div className="actions">
-            <strong>Comparing {sku}</strong>
+          <div className="import-comparison">
+            <strong>Compare versions of {sku}</strong>
+            <p>
+              Yellow cells show different values. Exclude the unwanted rows to
+              keep one version, or correct a SKU if these are different
+              products. Changes save when you leave a cell.
+            </p>
             <button
               className="btn-grey"
               onClick={() => {
                 setSku('');
+                setStatus('all');
                 setPage(1);
               }}
             >
-              Clear SKU filter
+              Back to all rows
             </button>
           </div>
         )}
