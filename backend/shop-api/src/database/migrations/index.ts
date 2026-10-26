@@ -1,3 +1,5 @@
+import { CreateImportPortal1792886500000 } from './1792886500000-create-import-portal.js';
+import { RecordImportFileErrors1792886600000 } from './1792886600000-record-import-file-errors.js';
 import { CreateAdmins1792886400000 } from './1792886400000-create-admins.js';
 import { MigrationInterface } from 'typeorm';
 import { CreateProducts1792650817000 } from './1792650817000-create-products.js';
@@ -11,4 +13,6 @@ export const migrations: (new () => MigrationInterface)[] = [
   CreateOrders1792730811000,
   CreateProcessedPaymentEvents1792731390000,
   CreateProductSearchOutbox1792767812000,
+  CreateImportPortal1792886500000,
+  RecordImportFileErrors1792886600000,
 ];

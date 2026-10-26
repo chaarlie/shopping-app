@@ -1,3 +1,4 @@
+import { ImportsModule } from './imports/imports.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -20,6 +21,7 @@ import { OpenSearchModule } from './search/opensearch.module.js';
     CqrsModule.forRoot(),
     DatabaseModule,
     AdminModule,
+    ImportsModule,
     OpenSearchModule,
     HealthModule,
     ProductsModule,

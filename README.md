@@ -109,3 +109,5 @@ The key in `docker-compose.yml` is for local use only, so set your own for any d
 CSV imports preserve existing stock unless `updateStock=true` is supplied. Negative stock becomes zero with a shortfall warning; zero prices remain invalid. See [import rules](docs/product-import.md).
 
 Admin provisioning and session design are described in [admin authentication](docs/admin-auth.md).
+
+The [saved import portal](docs/import-portal.md) stores uploaded CSVs, paginated previews and audited row corrections before applying changes. Admins must resolve conflicting SKUs; invalid rows stay in history.
