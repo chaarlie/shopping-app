@@ -1,12 +1,7 @@
-import { ConflictError } from '../../../common/errors.js';
-import { isUniqueViolation } from '../../../database/errors.js';
+import { ProductImportWriter } from '../../import/product-import-writer.js';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Transactional } from '@nestjs-cls/transactional';
-import {
-  CreateProductInput,
-  ProductImportReport,
-  ProductImportStatus,
-} from '@shop/contracts';
+import { ProductImportReport, ProductImportStatus } from '@shop/contracts';
 import {
   MatchedProductRow,
   matchExistingProducts,
@@ -20,7 +15,10 @@ import { ImportProductsCommand } from '../import-products.command.js';
 
 @CommandHandler(ImportProductsCommand)
 export class ImportProductsCommandHandler implements ICommandHandler<ImportProductsCommand> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly writer: ProductImportWriter,
+  ) {}
 
   @Transactional()
   async execute({
@@ -47,45 +45,11 @@ export class ImportProductsCommandHandler implements ICommandHandler<ImportProdu
     );
 
     if (!options.dryRun) {
-      try {
-        await this.apply(rows);
-      } catch (error) {
-        if (isUniqueViolation(error)) {
-          throw new ConflictError(
-            'The catalog changed during import. Preview the file again.',
-          );
-        }
-        throw error;
-      }
+      await this.writer.apply(rows);
     }
 
     return toReport(plan, rows, options.dryRun);
   }
-
-  private async apply(rows: MatchedProductRow[]): Promise<void> {
-    await this.products.createMany(
-      rows.flatMap((row) =>
-        row.status === 'create' && row.product ? [row.product] : [],
-      ),
-    );
-
-    for (const row of rows) {
-      if (row.status === 'update' && row.product && row.existingId !== null) {
-        await this.products.update(row.existingId, changesFrom(row.product));
-      }
-    }
-  }
-}
-
-function changesFrom(product: CreateProductInput) {
-  return {
-    name: product.name,
-    description: product.description,
-    category: product.category,
-    priceCents: product.priceCents,
-    stock: product.stock,
-    weightGrams: product.weightGrams,
-  };
 }
 
 function toReport(

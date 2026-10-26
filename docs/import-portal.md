@@ -11,3 +11,5 @@ Files remain in Postgres because the limit is 1 MB. Edits are separate append-on
 Endpoints are under `/api/admin/imports`: POST uploads; GET lists history; GET `/:id` previews; PATCH `/:id/rows/:row` edits/excludes; POST `/:id/refresh` refreshes the comparison; POST `/:id/apply` loads; GET `/:id/file` downloads the unchanged original as an attachment.
 
 The import integration tests cover immutable originals, audit records, stale edits, catalog conflicts, duplicate decisions, stock preservation, opt-in replacement, negative stock and pagination. Authentication tests cover protected writes, public storefront reads, logout/expiry, origin checks and rate limiting.
+
+Import persistence now exposes named operations rather than arbitrary SQL to handlers. Both import entry points share the ProductImportWriter and versioned product repository. Preview results use one conditional batch update so unchanged rows are not rewritten.
