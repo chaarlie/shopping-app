@@ -1,16 +1,20 @@
+import { z } from 'zod';
+import { adminProductsQuerySchema } from '@shop/contracts';
+import { ListAdminProductsQuery } from '../../products/queries/list-admin-products.query.js';
 import {
   Body,
   Controller,
   Get,
   HttpCode,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { signInSchema, type SignInInput } from '@shop/contracts';
 import type { Response } from 'express';
@@ -28,6 +32,7 @@ import { SignInCommand, SignOutCommand } from '../commands/session.command.js';
 export class AdminRestController {
   constructor(
     private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
     private readonly config: ConfigService<Env, true>,
   ) {}
   @Public()
@@ -50,6 +55,20 @@ export class AdminRestController {
       maxAge: 8 * 60 * 60 * 1000,
     });
     return result.admin;
+  }
+  @Get('products')
+  products(
+    @Query(new ZodValidationPipe(adminProductsQuerySchema))
+    query: z.infer<typeof adminProductsQuerySchema>,
+  ) {
+    return this.queries.execute(
+      new ListAdminProductsQuery(
+        query.page,
+        query.pageSize,
+        query.q,
+        query.reorder === 'true',
+      ),
+    );
   }
   @Get('session')
   session(@Req() req: AdminRequest) {

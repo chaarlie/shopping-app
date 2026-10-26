@@ -1,3 +1,4 @@
+import { ListAdminProductsQueryHandler } from './queries/handlers/list-admin-products-query.handler.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreateProductCommandHandler } from './commands/handlers/create-product-command.handler.js';
@@ -54,6 +55,7 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     CompleteProductSearchChangesCommandHandler,
     QueueAllProductsForSearchCommandHandler,
     GetProductQueryHandler,
+    ListAdminProductsQueryHandler,
     ListProductsQueryHandler,
     ListCategoriesQueryHandler,
     SearchProductsQueryHandler,
