@@ -163,7 +163,7 @@ describe('stored import review', () => {
       .send({ version: s.version - 1, excluded: true })
       .expect(409);
     await db.query(
-      "INSERT INTO products(sku,name,category,price_cents,stock) VALUES('OTHER','Other','Kitchen',100,1)",
+      "INSERT INTO products(sku,name,category,price_cents,stock) VALUES('MG-1','Other','Kitchen',100,1)",
     );
     await adminRequest(app)
       .post(`/api/admin/imports/${s.id}/apply`)
@@ -171,7 +171,70 @@ describe('stored import review', () => {
       .expect(409);
     expect(
       await db.query("SELECT * FROM products WHERE sku='MG-1'"),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
+  });
+  it('permits unrelated catalog activity and preserves current stock after sales', async () => {
+    const { body: initial } = await upload().expect(201);
+    await adminRequest(app)
+      .post(`/api/admin/imports/${initial.id}/apply`)
+      .send({ version: initial.version })
+      .expect(201);
+    const { body: review } = await upload(
+      csv.replace('Blue mug', 'Updated mug'),
+    ).expect(201);
+    await db.query(
+      "UPDATE products SET stock=3, version=version+1 WHERE sku='MG-1'",
+    );
+    await db.query(
+      "INSERT INTO products(sku,name,category,price_cents,stock) VALUES('OTHER','Other','Kitchen',100,2)",
+    );
+    await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/apply`)
+      .send({ version: review.version })
+      .expect(201);
+    expect(
+      (
+        await db.query(
+          "SELECT description,stock FROM products WHERE sku='MG-1'",
+        )
+      )[0],
+    ).toEqual({ description: 'Updated mug', stock: 3 });
+  });
+  it('rejects changes to relevant fields, opted-in stock or missing products', async () => {
+    const { body: initial } = await upload().expect(201);
+    await adminRequest(app)
+      .post(`/api/admin/imports/${initial.id}/apply`)
+      .send({ version: initial.version })
+      .expect(201);
+    const { body: review } = await upload(csv).expect(201);
+    await db.query(
+      "UPDATE products SET price_cents=500, version=version+1 WHERE sku='MG-1'",
+    );
+    await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/apply`)
+      .send({ version: review.version })
+      .expect(409);
+    const { body: refreshed } = await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/refresh`)
+      .send({ version: review.version, updateStock: true })
+      .expect(201);
+    await db.query(
+      "UPDATE products SET stock=2, version=version+1 WHERE sku='MG-1'",
+    );
+    await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/apply`)
+      .send({ version: refreshed.version })
+      .expect(409);
+    const { body: again } = await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/refresh`)
+      .send({ version: refreshed.version, updateStock: false })
+      .expect(201);
+    await db.query("DELETE FROM products WHERE sku='MG-1'");
+    await adminRequest(app)
+      .post(`/api/admin/imports/${review.id}/apply`)
+      .send({ version: again.version })
+      .expect(409);
+    expect(await db.query('SELECT * FROM products')).toHaveLength(0);
   });
   it('requires a duplicate SKU decision and permits excluding one conflicting row', async () => {
     const { body: s } = await upload(

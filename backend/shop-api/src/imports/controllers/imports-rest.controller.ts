@@ -26,7 +26,12 @@ import type { Response } from 'express';
 import type { AdminRequest } from '../../admin/access.js';
 import { ValidationError } from '../../common/errors.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
-import { ImportCommand } from '../commands/import.command.js';
+import {
+  UploadImportCommand,
+  EditImportRowCommand,
+  RefreshImportCommand,
+  ApplyImportCommand,
+} from '../commands/import.command.js';
 import {
   ImportDownloadQuery,
   ImportHistoryQuery,
@@ -57,11 +62,11 @@ export class ImportsRestController {
       throw new ValidationError('Attach a CSV file');
     }
     return this.commands.execute(
-      new ImportCommand(req.admin.id, {
-        kind: 'upload',
-        filename: file.originalname.slice(0, 255),
-        file: file.buffer,
-      }),
+      new UploadImportCommand(
+        req.admin.id,
+        file.originalname.slice(0, 255),
+        file.buffer,
+      ),
     );
   }
   @Get(':id')
@@ -103,18 +108,17 @@ export class ImportsRestController {
     input: z.infer<typeof editImportRowSchema>,
   ) {
     return this.commands.execute(
-      new ImportCommand(req.admin.id, { kind: 'edit', id, row, ...input }),
+      new EditImportRowCommand(req.admin.id, id, row, input),
     );
   }
   @Post(':id/refresh')
   refresh(
-    @Req() req: AdminRequest,
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(importActionSchema))
     input: z.infer<typeof importActionSchema>,
   ) {
     return this.commands.execute(
-      new ImportCommand(req.admin.id, { kind: 'refresh', id, ...input }),
+      new RefreshImportCommand(id, input.version, input.updateStock),
     );
   }
   @Post(':id/apply')
@@ -125,7 +129,7 @@ export class ImportsRestController {
     input: z.infer<typeof importActionSchema>,
   ) {
     return this.commands.execute(
-      new ImportCommand(req.admin.id, { kind: 'apply', id, ...input }),
+      new ApplyImportCommand(req.admin.id, id, input.version),
     );
   }
 }
