@@ -107,3 +107,5 @@ node -e "console.log('whsec_' + require('node:crypto').randomBytes(32).toString(
 The key in `docker-compose.yml` is for local use only, so set your own for any deployment. [Checkout flow](docs/checkout-flow.md#2-delivering-a-result-the-webhook) explains how the signature, the retries and the reconciliation job fit together.
 
 CSV imports preserve existing stock unless `updateStock=true` is supplied. Negative stock becomes zero with a shortfall warning; zero prices remain invalid. See [import rules](docs/product-import.md).
+
+Admin provisioning and session design are described in [admin authentication](docs/admin-auth.md).
