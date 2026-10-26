@@ -1,0 +1,20 @@
+services:
+  admin-provision:
+    image: shopping-app/shop-api
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: shop-api
+    profiles: [tools]
+    command: [node, dist/admin/provision-admins.js, /config/admins.yaml]
+    env_file: ./admins.local.env
+    environment:
+      DATABASE_URL: postgresql://shop:${SHOP_DB_PASSWORD:-shop}@postgres:5432/shop
+    volumes:
+      - ./admins.local.yaml:/config/admins.yaml:ro
+    depends_on:
+      shop-api-migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend

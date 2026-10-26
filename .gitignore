@@ -17,3 +17,6 @@ out/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+admins.local.yaml
+admins.local.env
