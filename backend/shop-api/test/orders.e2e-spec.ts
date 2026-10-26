@@ -1,3 +1,4 @@
+import request from 'supertest';
 import type { Response } from 'supertest';
 import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
@@ -95,6 +96,68 @@ describe('Orders (e2e)', () => {
     );
     return Number(count);
   };
+
+  it('lists admin orders with immutable purchased items, buyer details and stable pagination', async () => {
+    await request(app.getHttpServer()).get('/api/admin/orders').expect(401);
+    const product = await addProduct(10);
+    const first = await placeOrder(
+      orderOf([{ productId: product.id, quantity: 2 }]),
+      'admin-order-0001',
+    ).expect(201);
+    const second = await placeOrder(
+      orderOf([{ productId: product.id, quantity: 1 }]),
+      'admin-order-0002',
+    ).expect(201);
+    await dataSource.query(
+      "UPDATE orders SET status='paid', created_at='2026-10-25T12:00:00Z'",
+    );
+    await dataSource.query(
+      "UPDATE products SET name='Renamed', price_cents=100, version=version+1 WHERE id=$1",
+      [product.id],
+    );
+    const { body } = await adminRequest(app)
+      .get('/api/admin/orders?pageSize=1&status=paid')
+      .expect(200);
+    expect(body.total).toBe(2);
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({
+      reference: second.body.reference,
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      totalCents: 8999,
+      createdAt: '2026-10-25T12:00:00.000Z',
+      items: [
+        {
+          name: 'Running Shoes',
+          sku: 'RS-001',
+          quantity: 1,
+          unitPriceCents: 8999,
+        },
+      ],
+    });
+    expect(Object.keys(body.items[0]).sort()).toEqual(
+      [
+        'reference',
+        'status',
+        'name',
+        'email',
+        'items',
+        'totalCents',
+        'currency',
+        'createdAt',
+      ].sort(),
+    );
+    const next = await adminRequest(app)
+      .get('/api/admin/orders?pageSize=1&page=2&status=paid')
+      .expect(200);
+    expect(next.body.items[0].reference).toBe(first.body.reference);
+    const empty = await adminRequest(app)
+      .get('/api/admin/orders?status=cancelled')
+      .expect(200);
+    expect(empty.body).toMatchObject({ total: 0, items: [] });
+    await adminRequest(app).get('/api/admin/orders?pageSize=101').expect(400);
+    await adminRequest(app).get('/api/admin/orders?status=invalid').expect(400);
+  });
 
   it('takes the stock, prices the order from the database and asks payments-api to charge it', async () => {
     const shoes = await addProduct(5);

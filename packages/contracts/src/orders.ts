@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pageQuerySchema, pageSchema } from './pagination.js';
 import { cardSchema } from './cards.js';
 
 export const currencySchema = z.literal('USD');
@@ -133,3 +134,20 @@ export const orderSchema = z.object({
 });
 
 export type Order = z.infer<typeof orderSchema>;
+
+export const adminOrdersQuerySchema = pageQuerySchema.extend({
+  status: orderStatusSchema.optional(),
+});
+export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
+export const adminOrderSchema = orderSchema.pick({
+  reference: true,
+  status: true,
+  name: true,
+  email: true,
+  items: true,
+  totalCents: true,
+  currency: true,
+  createdAt: true,
+});
+export const adminOrdersSchema = pageSchema(adminOrderSchema);
+export type AdminOrders = z.infer<typeof adminOrdersSchema>;

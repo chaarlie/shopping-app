@@ -44,3 +44,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - **Cancelled orders with unresolved attempts remain eligible for reconciliation.** They are rechecked no more than once per minute after a successful lookup; this favors recovery over silently abandoning an unknown payment. A larger deployment would need an explicit operational retention and investigation policy.
 
 - **Import review usability:** errors and actions are grouped together, with explicit duplicate labels and a needs-attention shortcut. Desktop and phone visual acceptance of this refinement remains with the user. Difference highlights compare rows on the current page; large duplicate groups may span pages.
+
+- **Admin orders:** guest names and email addresses are supplied at checkout, not verified identities. The page shows order placement time, not payment settlement time. Browser acceptance remains with the user. Quarantined import rows remain accessible through each import’s Needs attention filter; applied imports are read-only and corrections require another upload.

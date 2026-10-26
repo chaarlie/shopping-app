@@ -40,6 +40,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
           Stockroom <span className="muted">Admin</span>
         </Link>
         <Link href="/admin/products">Products</Link>
+        <Link href="/admin/orders">Orders</Link>
         <Link href="/admin/imports">Import history</Link>
         <Link href="/admin/imports/new">Import CSV</Link>
         <Link className="btn-grey" href="/">
