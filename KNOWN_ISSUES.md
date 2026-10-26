@@ -56,3 +56,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - Import edit refreshes now preserve the mounted table and draft text. A row may still leave the current view after a save if it no longer matches the selected status or SKU filter. Browser acceptance is pending.
 
 Import persistence now exposes named operations rather than arbitrary SQL to handlers. Both import entry points share the ProductImportWriter and versioned product repository. Preview results use one conditional batch update so unchanged rows are not rewritten.
+
+- Import conflicts now compare only included SKUs and relevant fields. Stock-only sales do not block the default stock-preserving import. Older preview fingerprints require a refresh. Relevant catalog edits, deletion/recreation and concurrent SKU creation still produce 409.

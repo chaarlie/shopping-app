@@ -35,6 +35,16 @@ export class TypeOrmProductRepository
     return affected === 1 ? this.findById(id) : null;
   }
 
+  findBySkus(skus: string[]): Promise<ProductEntity[]> {
+    if (!skus.length) {
+      return Promise.resolve([]);
+    }
+    return this.repository.find({
+      where: { sku: In(skus) },
+      order: { id: 'ASC' },
+    });
+  }
+
   async findBySkusForUpdate(skus: string[]): Promise<ProductEntity[]> {
     if (skus.length === 0) {
       return [];

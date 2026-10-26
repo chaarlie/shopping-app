@@ -11,9 +11,29 @@ export type CatalogProduct = CreateProductInput & {
   id: number;
   version: number;
 };
-export function catalogHash(products: CatalogProduct[]): string {
+export function catalogHash(
+  products: CatalogProduct[],
+  updateStock = false,
+): string {
   return createHash('sha256')
-    .update(JSON.stringify(products.map((p) => [p.id, p.version])))
+    .update(
+      JSON.stringify([
+        'scoped-v1',
+        updateStock,
+        [...products]
+          .sort((a, b) => a.id - b.id)
+          .map((p) => [
+            p.id,
+            p.sku,
+            p.name,
+            p.description,
+            p.category,
+            p.priceCents,
+            p.weightGrams,
+            ...(updateStock ? [p.stock] : []),
+          ]),
+      ]),
+    )
     .digest('hex');
 }
 export function planStoredRows(

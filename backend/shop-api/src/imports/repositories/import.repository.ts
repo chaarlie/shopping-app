@@ -1,6 +1,5 @@
 import type { ImportSummary, StagedRow, ImportPreview } from '@shop/contracts';
 import type { ProductImportPlan } from '../../products/import/plan-product-import.js';
-import type { CatalogProduct } from '../import-planner.js';
 import type { ProductCsvValues } from '../../products/import/product-csv.js';
 export type StoredRow = {
   row_number: number;
@@ -36,8 +35,6 @@ export abstract class ImportRepository {
     adminId: number,
   ): Promise<void>;
   abstract setStockPolicy(id: number, updateStock: boolean): Promise<void>;
-  abstract lockCatalog(): Promise<void>;
-  abstract catalog(): Promise<CatalogProduct[]>;
   abstract markApplied(id: number, adminId: number): Promise<void>;
   abstract savePlan(
     id: number,

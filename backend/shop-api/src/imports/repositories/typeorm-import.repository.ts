@@ -4,7 +4,6 @@ import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-t
 import { createHash } from 'node:crypto';
 import type { ProductImportPlan } from '../../products/import/plan-product-import.js';
 import type { ProductCsvValues } from '../../products/import/product-csv.js';
-import type { CatalogProduct } from '../import-planner.js';
 import type { ImportSummary, StagedRow } from '@shop/contracts';
 import {
   ImportRepository,
@@ -82,14 +81,6 @@ export class TypeOrmImportRepository extends ImportRepository {
       id,
       updateStock,
     ]);
-  }
-  async lockCatalog(): Promise<void> {
-    await this.query('LOCK TABLE products IN SHARE ROW EXCLUSIVE MODE');
-  }
-  catalog(): Promise<CatalogProduct[]> {
-    return this.query(
-      'SELECT id,sku,name,description,category,price_cents AS "priceCents",stock,weight_grams AS "weightGrams",version FROM products ORDER BY id',
-    );
   }
   async markApplied(id: number, adminId: number): Promise<void> {
     await this.query(

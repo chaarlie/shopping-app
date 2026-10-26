@@ -1,26 +1,43 @@
 import { Command } from '@nestjs/cqrs';
 import type { ImportSummary } from '@shop/contracts';
 import type { ProductCsvValues } from '../../products/import/product-csv.js';
-export type ImportAction =
-  | { kind: 'upload'; filename: string; file: Buffer }
-  | {
-      kind: 'edit';
-      id: number;
-      version: number;
-      row: number;
-      values?: ProductCsvValues;
-      excluded?: boolean;
-    }
-  | {
-      kind: 'refresh' | 'apply';
-      id: number;
-      version: number;
-      updateStock?: boolean;
-    };
-export class ImportCommand extends Command<ImportSummary> {
+export class UploadImportCommand extends Command<ImportSummary> {
   constructor(
     public readonly adminId: number,
-    public readonly action: ImportAction,
+    public readonly filename: string,
+    public readonly file: Buffer,
+  ) {
+    super();
+  }
+}
+export class EditImportRowCommand extends Command<ImportSummary> {
+  constructor(
+    public readonly adminId: number,
+    public readonly id: number,
+    public readonly row: number,
+    public readonly input: {
+      version: number;
+      values?: ProductCsvValues;
+      excluded?: boolean;
+    },
+  ) {
+    super();
+  }
+}
+export class RefreshImportCommand extends Command<ImportSummary> {
+  constructor(
+    public readonly id: number,
+    public readonly version: number,
+    public readonly updateStock?: boolean,
+  ) {
+    super();
+  }
+}
+export class ApplyImportCommand extends Command<ImportSummary> {
+  constructor(
+    public readonly adminId: number,
+    public readonly id: number,
+    public readonly version: number,
   ) {
     super();
   }
