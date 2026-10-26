@@ -1,4 +1,8 @@
-import type { OrderStatus } from '@shop/contracts';
+import type {
+  AdminOrders,
+  AdminOrdersQuery,
+  OrderStatus,
+} from '@shop/contracts';
 import { OrderLineEntity } from '../entities/order-line.entity.js';
 import { OrderEntity } from '../entities/order.entity.js';
 import { PaymentAttemptEntity } from '../entities/payment-attempt.entity.js';
@@ -36,6 +40,8 @@ export type PaymentAttemptChanges = Partial<
 >;
 
 export abstract class OrderRepository {
+  abstract listForAdmin(query: AdminOrdersQuery): Promise<AdminOrders>;
+
   abstract referenceExists(reference: string): Promise<boolean>;
 
   abstract findByReference(reference: string): Promise<OrderAggregate | null>;

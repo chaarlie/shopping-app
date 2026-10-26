@@ -1,3 +1,5 @@
+import { AdminOrdersRestController } from './controllers/admin-orders-rest.controller.js';
+import { ListAdminOrdersQueryHandler } from './queries/handlers/list-admin-orders-query.handler.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from '../products/products.module.js';
@@ -40,7 +42,11 @@ import { TypeOrmProcessedPaymentEventRepository } from './repositories/typeorm-p
     ]),
     ProductsModule,
   ],
-  controllers: [OrdersRestController, PaymentWebhooksController],
+  controllers: [
+    AdminOrdersRestController,
+    OrdersRestController,
+    PaymentWebhooksController,
+  ],
   providers: [
     {
       provide: OrderRepository,
@@ -68,6 +74,7 @@ import { TypeOrmProcessedPaymentEventRepository } from './repositories/typeorm-p
     ReconcileOrderCommandHandler,
     MarkOrderRefundedCommandHandler,
     GetOrderQueryHandler,
+    ListAdminOrdersQueryHandler,
     FindOrdersToReconcileQueryHandler,
     OrderReconciliationJob,
   ],

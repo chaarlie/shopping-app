@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
-import type { OrderStatus } from '@shop/contracts';
-import { EntityManager } from 'typeorm';
+import type {
+  AdminOrders,
+  AdminOrdersQuery,
+  OrderStatus,
+} from '@shop/contracts';
+import { EntityManager, In } from 'typeorm';
 import { OrderLineEntity } from '../entities/order-line.entity.js';
 import { OrderEntity } from '../entities/order.entity.js';
 import { PaymentAttemptEntity } from '../entities/payment-attempt.entity.js';
@@ -23,6 +27,51 @@ export class TypeOrmOrderRepository implements OrderRepository {
 
   private get manager(): EntityManager {
     return this.txHost.tx;
+  }
+
+  async listForAdmin({
+    page,
+    pageSize,
+    status,
+  }: AdminOrdersQuery): Promise<AdminOrders> {
+    const [orders, total] = await this.manager
+      .getRepository(OrderEntity)
+      .findAndCount({
+        where: status ? { status } : {},
+        order: { createdAt: 'DESC', id: 'DESC' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
+    const lines = orders.length
+      ? await this.manager.getRepository(OrderLineEntity).find({
+          where: { orderId: In(orders.map((order) => order.id)) },
+          order: { id: 'ASC' },
+        })
+      : [];
+    return {
+      page,
+      pageSize,
+      total,
+      items: orders.map((order) => ({
+        reference: order.reference,
+        status: order.status,
+        name: order.name,
+        email: order.email,
+        totalCents: order.totalCents,
+        currency: order.currency,
+        createdAt: order.createdAt.toISOString(),
+        items: lines
+          .filter((line) => line.orderId === order.id)
+          .map((line) => ({
+            productId: line.productId,
+            sku: line.sku,
+            name: line.name,
+            quantity: line.quantity,
+            unitPriceCents: line.unitPriceCents,
+            lineTotalCents: line.unitPriceCents * line.quantity,
+          })),
+      })),
+    };
   }
 
   referenceExists(reference: string): Promise<boolean> {

@@ -113,3 +113,5 @@ Admin provisioning and session design are described in [admin authentication](do
 The [saved import portal](docs/import-portal.md) stores uploaded CSVs, paginated previews and audited row corrections before applying changes. Admins must resolve conflicting SKUs; invalid rows stay in history.
 
 The import review places validation messages beside each row's actions, labels conflicting duplicates explicitly, and offers a “Show rows to fix” filter. Comparing a SKU highlights different values; the admin still chooses which versions to exclude. This keeps resolution explicit rather than silently selecting the last row.
+
+Admin Orders (`/admin/orders`) lists paid purchases by default, with status filters, server pagination, checkout name/email, original product snapshots, placement time and USD totals. This is a protected admin view; guest identity is self-reported, and placement time is not a payment settlement timestamp.
