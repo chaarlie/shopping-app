@@ -32,8 +32,8 @@ export function planStoredRows(
   ].join('\n');
   const plan = planProductImport(csv);
   const existing = new Map(products.map((p) => [p.sku, p]));
-  const ready = plan.rows.map((row, i) => {
-    const stored = included[i];
+  const ready = plan.rows.map((row) => {
+    const stored = included[row.row - 2];
     const remap = (message: string) =>
       message.replace(
         /(rows? )([0-9, and]+)/g,
@@ -111,7 +111,12 @@ export function planStoredRows(
       row: row.row_number,
       status,
       values: row.values,
-      errors: planned?.errors ?? [],
+      errors: row.excluded
+        ? []
+        : (planned?.errors ??
+          (row.original_errors.length && !row.edited_at
+            ? row.original_errors
+            : ['Row is empty. Enter product values or exclude this row.'])),
       warnings: planned?.warnings ?? [],
       changes,
       excluded: row.excluded,

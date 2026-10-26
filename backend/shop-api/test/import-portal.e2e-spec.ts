@@ -66,6 +66,53 @@ describe('stored import review', () => {
       .expect(201);
     expect(await db.query('SELECT * FROM products')).toHaveLength(1);
   });
+  it('keeps row identity and quarantine through an emptied row, apply and saved history', async () => {
+    const input =
+      csv +
+      '\nBroken,BAD,Description,Kitchen,abc,5,0.3\nGood,GOOD,Description,Kitchen,4.00,5,0.3\nMalformed,QUARANTINED,Description,Kitchen,5.00,5,0.3,extra';
+    const { body: summary } = await upload(input).expect(201);
+    const { body: edited } = await adminRequest(app)
+      .patch(`/api/admin/imports/${summary.id}/rows/2`)
+      .send({
+        version: summary.version,
+        values: {
+          name: '',
+          sku: '',
+          description: '',
+          category: '',
+          price: '',
+          stock: '',
+          weight_kg: '',
+        },
+      })
+      .expect(200);
+    const read = () =>
+      adminRequest(app).get(`/api/admin/imports/${summary.id}`).expect(200);
+    const { body: before } = await read();
+    expect(
+      before.rows.map((row: { row: number; status: string }) => [
+        row.row,
+        row.status,
+      ]),
+    ).toEqual([
+      [2, 'error'],
+      [3, 'error'],
+      [4, 'create'],
+      [5, 'error'],
+    ]);
+    expect(before.rows[0].errors.join(' ')).toContain('Row is empty');
+    expect(before.rows[1].errors.join(' ')).toContain('abc');
+    expect(before.rows[3].errors.join(' ')).toContain('Expected 7 values');
+    await adminRequest(app)
+      .post(`/api/admin/imports/${summary.id}/apply`)
+      .send({ version: edited.version })
+      .expect(201);
+    expect(await db.query('SELECT sku FROM products ORDER BY sku')).toEqual([
+      { sku: 'GOOD' },
+    ]);
+    const { body: after } = await read();
+    expect(after.rows).toEqual(before.rows);
+  });
   it('rejects stale import edits and changed catalog previews', async () => {
     const { body: s } = await upload().expect(201);
     await adminRequest(app)
