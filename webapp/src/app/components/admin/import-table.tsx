@@ -12,7 +12,11 @@ import {
   type StagedRow,
 } from '@shop/contracts';
 type Meta = {
-  edit: (row: StagedRow, column: ProductCsvColumn, value: string) => void;
+  edit: (
+    row: StagedRow,
+    column: ProductCsvColumn,
+    value: string,
+  ) => Promise<void>;
   exclude: (row: StagedRow) => void;
   compare: (sku: string) => void;
   disabled: boolean;
@@ -27,31 +31,50 @@ function EditCell({
   value: string;
   label: string;
   disabled: boolean;
-  save: (value: string) => void;
+  save: (value: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(value);
+  const [baseline, setBaseline] = useState(value);
+  const [feedback, setFeedback] = useState('');
+  if (baseline !== value) {
+    setBaseline(value);
+    if (draft === baseline) {
+      setDraft(value);
+    }
+  }
   return (
-    <input
-      className="cell-input"
-      value={draft}
-      aria-label={label}
-      maxLength={10000}
-      disabled={disabled}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        if (draft !== value) {
-          save(draft);
-        }
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.currentTarget.blur();
-        }
-        if (e.key === 'Escape') {
-          setDraft(value);
-        }
-      }}
-    />
+    <div>
+      <input
+        className="cell-input"
+        value={draft}
+        aria-label={label}
+        maxLength={10000}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft !== value) {
+            const submitted = draft;
+            setFeedback('Saving…');
+            void save(submitted).then(
+              () => setFeedback('Saved'),
+              () =>
+                setFeedback(
+                  'Not saved. Your text is kept; leave this cell again to retry.',
+                ),
+            );
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+          if (e.key === 'Escape') {
+            setDraft(value);
+          }
+        }}
+      />
+      <small role="status">{feedback}</small>
+    </div>
   );
 }
 const columns: ColumnDef<typeof features, StagedRow>[] = [
@@ -130,12 +153,12 @@ const columns: ColumnDef<typeof features, StagedRow>[] = [
         header: column,
         cell: ({ row, table }) => (
           <EditCell
-            key={`${row.original.row}-${column}-${row.original.values[column]}`}
+            key={`${row.original.row}-${column}`}
             value={row.original.values[column]}
             label={`Row ${row.original.row} ${column}`}
             disabled={!!table.options.meta?.disabled || row.original.excluded}
             save={(value) =>
-              table.options.meta?.edit(row.original, column, value)
+              table.options.meta!.edit(row.original, column, value)
             }
           />
         ),

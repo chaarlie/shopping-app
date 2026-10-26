@@ -17,15 +17,19 @@ export function useResource<T>(path: string, schema: z.ZodType<T>) {
   useEffect(() => {
     const controller = new AbortController();
     request(path, schema, { signal: controller.signal }).then(
-      (data) => setResult({ path, data, error: null, loading: false }),
+      (data) => {
+        if (!controller.signal.aborted) {
+          setResult({ path, data, error: null, loading: false });
+        }
+      },
       (error) => {
         if (!controller.signal.aborted) {
-          setResult({
+          setResult((previous) => ({
             path,
-            data: null,
+            data: previous.path === path ? previous.data : null,
             error: errorMessage(error),
             loading: false,
-          });
+          }));
         }
       },
     );
@@ -35,8 +39,14 @@ export function useResource<T>(path: string, schema: z.ZodType<T>) {
     result.path === path ? result : { data: null, error: null, loading: true };
   return {
     ...current,
+    replace: (data: T) =>
+      setResult({ path, data, error: null, loading: false }),
     reload: () => {
-      setResult({ path, data: null, error: null, loading: true });
+      setResult((previous) => ({
+        ...previous,
+        error: null,
+        loading: !previous.data,
+      }));
       setRevision((v) => v + 1);
     },
   };
