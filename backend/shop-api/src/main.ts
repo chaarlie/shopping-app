@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { ConsoleLogger, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
@@ -6,7 +6,12 @@ import { setupApp } from './app.setup.js';
 import { Env } from './config/env.schema.js';
 
 async function bootstrap() {
-  const app = setupApp(await NestFactory.create(AppModule, { rawBody: true }));
+  const app = setupApp(
+    await NestFactory.create(AppModule, {
+      rawBody: true,
+      logger: new ConsoleLogger({ json: true }),
+    }),
+  );
   app.enableShutdownHooks();
 
   const configService = app.get<ConfigService<Env, true>>(ConfigService);
