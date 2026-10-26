@@ -115,3 +115,11 @@ The [saved import portal](docs/import-portal.md) stores uploaded CSVs, paginated
 The import review places validation messages beside each row's actions, labels conflicting duplicates explicitly, and offers a “Show rows to fix” filter. Comparing a SKU highlights different values; the admin still chooses which versions to exclude. This keeps resolution explicit rather than silently selecting the last row.
 
 Admin Orders (`/admin/orders`) lists paid purchases by default, with status filters, server pagination, checkout name/email, original product snapshots, placement time and USD totals. This is a protected admin view; guest identity is self-reported, and placement time is not a payment settlement timestamp.
+
+### Local configuration
+
+Copy `.env.example` to `.env` and set `APP_PORT` before running `docker compose up --build`. The default remains http://localhost:8080. The default admin allowed origins follow `APP_PORT` and include the separate development frontend at http://localhost:3107. Set `APP_ORIGIN` explicitly to comma-separated origins without trailing slashes when using a custom hostname or development frontend port. Compose reads `.env` for substitution; only variables explicitly wired into services are passed into their containers. Shell variables override the file.
+
+Internal service ports stay fixed, keeping service URLs and health checks consistent. For direct debugging, opt in with `docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build`. The override publishes webapp, shop API, payments API, Postgres and OpenSearch only on localhost, using the host ports in `.env.example`. The webapp's normal browser API requests still use nginx; use the main application URL for full user journeys. Do not use this override for deployment. Service keys and admin authorization still apply.
+
+Existing Compose settings also accept `SHOP_DB_PASSWORD`, `PAYMENTS_DB_PASSWORD`, `POSTGRES_PASSWORD`, `PAYMENTS_API_KEY`, `PAYMENT_WEBHOOK_SECRET` and `ORDER_ACCESS_SECRET`. Local defaults are for development only. Changing database password variables does not rotate passwords in an existing database volume. Use database administration to rotate existing credentials; do not delete volumes containing data you need.

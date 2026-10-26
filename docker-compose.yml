@@ -30,7 +30,7 @@ services:
   nginx:
     image: nginx:1.27-alpine
     ports:
-      - "8080:80"
+      - "${APP_PORT:-8080}:80"
     volumes:
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -59,7 +59,7 @@ services:
       PAYMENTS_API_URL: http://payments-api:3000
       PAYMENTS_API_KEY: *payments-api-key
       PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
-      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080,http://localhost:3107}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:${APP_PORT:-8080},http://localhost:3107}
       ORDER_ACCESS_SECRET: ${ORDER_ACCESS_SECRET:-local-only-order-access-secret-change-me}
       ORDER_COOKIE_SECURE: "false"
       OPENSEARCH_URL: http://opensearch:9200

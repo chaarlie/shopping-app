@@ -1,0 +1,16 @@
+services:
+  webapp:
+    ports:
+      - "127.0.0.1:${WEBAPP_PORT:-3107}:3000"
+  shop-api:
+    ports:
+      - "127.0.0.1:${SHOP_API_PORT:-3108}:3000"
+  payments-api:
+    ports:
+      - "127.0.0.1:${PAYMENTS_API_PORT:-3109}:3000"
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+  opensearch:
+    ports:
+      - "127.0.0.1:${OPENSEARCH_PORT:-9201}:9200"
