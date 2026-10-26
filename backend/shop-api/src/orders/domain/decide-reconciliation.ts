@@ -23,7 +23,7 @@ export function decideReconciliation(
   payments: Payment[],
   now: Date,
 ): ReconciliationDecision {
-  if (order.status !== 'pending_payment') {
+  if (order.status !== 'pending_payment' && order.status !== 'cancelled') {
     return { kind: 'leave' };
   }
 
@@ -39,7 +39,10 @@ export function decideReconciliation(
     return { kind: 'leave' };
   }
 
-  if (order.dueAt.getTime() <= now.getTime()) {
+  if (
+    order.status === 'pending_payment' &&
+    order.dueAt.getTime() <= now.getTime()
+  ) {
     return { kind: 'cancel' };
   }
 

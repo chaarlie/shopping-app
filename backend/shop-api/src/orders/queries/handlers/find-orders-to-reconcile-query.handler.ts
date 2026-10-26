@@ -20,7 +20,7 @@ export class FindOrdersToReconcileQueryHandler implements IQueryHandler<FindOrde
       `
         SELECT o.reference
         FROM orders o
-        WHERE o.status = 'pending_payment'
+        WHERE (o.status = 'pending_payment'
           AND (
             o.due_at <= now()
             OR EXISTS (
@@ -31,7 +31,15 @@ export class FindOrdersToReconcileQueryHandler implements IQueryHandler<FindOrde
                 AND a.updated_at <= now() - make_interval(secs => $1)
             )
           )
-        ORDER BY o.due_at
+          ) OR (
+            o.status = 'cancelled'
+            AND o.reconcile_after <= now()
+            AND EXISTS (
+              SELECT 1 FROM payment_attempts a
+              WHERE a.order_id=o.id AND a.status IN ('requested','processing')
+            )
+          )
+        ORDER BY CASE WHEN o.status='cancelled' THEN o.reconcile_after ELSE o.due_at END, o.id
         LIMIT $2
       `,
       [unansweredAfterMs / 1000, limit],

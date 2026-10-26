@@ -2,7 +2,7 @@
 
 This is the design the checkout is being built to, and this page changes in the same commits as the code.
 
-**Status:** everything on this page is built in shop-api and payments-api, and [What the design guarantees](#what-the-design-guarantees) lists the test that proves each guarantee. The webapp's checkout screens are not built yet.
+**Status:** everything on this page is built in shop-api and payments-api, and [What the design guarantees](#what-the-design-guarantees) lists the test that proves each guarantee. The webapp includes cart, checkout and live order-status screens.
 
 payments-api plays the part of a payment gateway, and shop-api is the merchant. Requests go one way: shop-api asks payments-api to charge a card. Results come back the other way as signed webhooks, which is how gateways such as Stripe and Adyen report payments to merchants.
 
@@ -127,10 +127,10 @@ sequenceDiagram
     actor B as Browser
 
     loop reconciliation job, every minute
-        Note over S: Find pending_payment orders that are due,<br/>or whose payment has been processing for over a minute.
+        Note over S: Find pending_payment orders that are due,<br/>or whose payment has been processing for over a minute,<br/>plus cancelled orders with unresolved attempts.
         S->>P: GET /payments?orderReference=... (service key, 5 s timeout)
         alt payments-api can't be reached, or a payment is still processing
-            Note over S: Leave the order pending and ask again next time.<br/>Not knowing isn't the same as not paid.
+            Note over S: Leave the order unchanged and ask again next time.<br/>Not knowing isn't the same as not paid.
         else a payment succeeded
             Note over S: One transaction. Mark the order paid.<br/>The webhook changes nothing when it arrives.
             S-)B: paid
@@ -144,7 +144,7 @@ sequenceDiagram
     end
 
     opt a payment succeeds after its order was cancelled
-        P->>S: payment.succeeded webhook
+        P->>S: Late success reported by webhook or reconciliation
         alt the stock is still there
             Note over S: One transaction. Take the stock again and mark the order paid.
             S-)B: paid
@@ -217,3 +217,8 @@ Each guarantee has a test that was seen failing against a broken version of the 
 ### Webhook retry test timing
 
 The sender marks an event dead after three failed deliveries. Its e2e test asserts each claimed delivery, checks that attempts one and two remain live, and checks that attempt three marks the event dead. Test fixtures explicitly make settlement due using the database clock and webhook delivery due using the application clock. Mixing Postgres `now()` precision with JavaScript millisecond timestamps previously allowed a loop iteration to claim nothing. A regression test holds the application clock behind the database clock to reproduce that boundary without sleeps.
+
+Payment settlement e2e fixtures explicitly set processing payments due using the database clock before running the worker. A test holds the application clock one minute ahead, preventing host/container clock differences from skipping settlement and causing unrelated listing/refund assertions to fail. Production settlement scheduling is unchanged.
+## Recovery after cancellation
+
+The reconciliation query also selects cancelled orders with unresolved requested/processing attempts. A successful lookup defers their next check by one minute so a batch of unresolved cancellations cannot permanently crowd out other orders. A late success uses the same policy as the webhook path: reserve stock again in the order transaction, or move to refund_pending if it is unavailable. Refunds still happen outside database transactions and use the payment ID as the idempotency key. The reconciliation e2e suite covers lost late successes, unavailable stock, repeated execution and deferred retry eligibility.

@@ -62,6 +62,8 @@ export abstract class OrderRepository {
 
   abstract touch(id: number): Promise<void>;
 
+  abstract deferReconciliation(id: number): Promise<void>;
+
   abstract addAttempt(
     orderId: number,
     idempotencyKey: string,

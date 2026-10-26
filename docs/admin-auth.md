@@ -13,3 +13,5 @@ Existing catalog mutation tests now use explicit administrator sessions. Public 
 Global enforcement now protects catalog writes. Health, browsing, categories and guest checkout opt out explicitly. The internal signed payment webhook bypasses session and browser-origin checks, retaining its own signature guard. Unknown routes still return 404.
 
 `GET /api/admin/products` provides authenticated, paginated product management with name/SKU filtering and an out-of-stock reorder filter. It reads Postgres directly so administrators can manage products while the search index is unavailable.
+
+Request logs are JSON records with a generated request ID, resolved admin ID, method, path, status and duration. Passwords, cookies and request bodies are excluded. Import history and edit records are the persistent audit trail; operational logs are separate.

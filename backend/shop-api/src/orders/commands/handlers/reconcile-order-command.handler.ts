@@ -1,3 +1,4 @@
+import { stockCoversLines } from '../../domain/stock-covers-lines.js';
 import { Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Transactional } from '@nestjs-cls/transactional';
@@ -35,6 +36,10 @@ export class ReconcileOrderCommandHandler implements ICommandHandler<ReconcileOr
       return 'leave';
     }
 
+    if (found.order.status === 'cancelled') {
+      await this.orders.deferReconciliation(found.order.id);
+    }
+
     const decision = decideReconciliation(
       {
         status: found.order.status,
@@ -70,11 +75,27 @@ export class ReconcileOrderCommandHandler implements ICommandHandler<ReconcileOr
   }
 
   private async markPaid(
-    { order, attempts }: OrderAggregate,
+    { order, attempts, lines }: OrderAggregate,
     payment: Payment,
   ): Promise<void> {
-    await this.orders.transition(order.id, 'pending_payment', {
-      status: 'paid',
+    let status: 'paid' | 'refund_pending' = 'paid';
+    if (order.status === 'cancelled') {
+      const productIds = lines.flatMap(({ productId }) =>
+        productId === null ? [] : [productId],
+      );
+      const products = await this.products.findByIdsForUpdate(productIds);
+      if (stockCoversLines(lines, products)) {
+        for (const { productId, quantity } of lines) {
+          if (productId !== null) {
+            await this.products.changeStock(productId, -quantity);
+          }
+        }
+      } else {
+        status = 'refund_pending';
+      }
+    }
+    await this.orders.transition(order.id, order.status, {
+      status,
       paymentId: payment.id,
     });
 

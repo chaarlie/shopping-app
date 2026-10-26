@@ -41,6 +41,10 @@ describe('Payments (e2e)', () => {
     );
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   afterAll(async () => {
     await app.close();
   });
@@ -51,6 +55,13 @@ describe('Payments (e2e)', () => {
       .set('Authorization', `Bearer ${apiKey}`)
       .set('Idempotency-Key', key)
       .send(body);
+
+  const settleDue = async () => {
+    await dataSource.query(
+      "UPDATE payments SET settle_at=now()-interval '1 second' WHERE status='processing'",
+    );
+    return settlement.runOnce();
+  };
 
   const outboxEvents = () =>
     dataSource.query<{ type: string; payload: unknown }[]>(
@@ -138,12 +149,14 @@ describe('Payments (e2e)', () => {
   });
 
   it('settles an approved card and writes a payment.succeeded event', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 60_000);
     const { body } = await createPayment(
       payment(approved),
       'key-settle-ok',
     ).expect(202);
 
-    expect(await settlement.runOnce()).toBe(1);
+    expect(await settleDue()).toBe(1);
 
     const [event] = await outboxEvents();
     const parsed = paymentEventSchema.parse(event.payload);
@@ -157,12 +170,12 @@ describe('Payments (e2e)', () => {
         cardLast4: '4242',
       },
     });
-    expect(await settlement.runOnce()).toBe(0);
+    expect(await settleDue()).toBe(0);
   });
 
   it('settles a declined card with its reason and allows another attempt', async () => {
     await createPayment(payment(declined), 'key-declined').expect(202);
-    await settlement.runOnce();
+    await settleDue();
 
     const [event] = await outboxEvents();
     expect(event.payload).toMatchObject({
@@ -178,7 +191,7 @@ describe('Payments (e2e)', () => {
 
   it('lists the payments of an order', async () => {
     await createPayment(payment(declined), 'key-list-1').expect(202);
-    await settlement.runOnce();
+    await settleDue();
     await createPayment(payment(approved), 'key-list-2').expect(202);
     await createPayment(payment(approved, 'SR-0THR-0RDR'), 'key-list-3').expect(
       202,
@@ -200,7 +213,7 @@ describe('Payments (e2e)', () => {
       payment(approved),
       'key-refund',
     ).expect(202);
-    await settlement.runOnce();
+    await settleDue();
 
     const refund = () =>
       request(app.getHttpServer())
@@ -220,7 +233,7 @@ describe('Payments (e2e)', () => {
       payment(declined),
       'key-no-refund',
     ).expect(202);
-    await settlement.runOnce();
+    await settleDue();
 
     await request(app.getHttpServer())
       .post(`/payments/${body.id}/refunds`)
