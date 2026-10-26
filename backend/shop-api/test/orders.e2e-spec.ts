@@ -1,6 +1,7 @@
+import type { Response } from 'supertest';
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import request, { Response } from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -48,6 +49,7 @@ describe('Orders (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
   });
 
@@ -63,7 +65,7 @@ describe('Orders (e2e)', () => {
   });
 
   const addProduct = async (stock: number, priceCents = 8999) => {
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .post('/api/products')
       .send({
         sku: 'RS-001',
@@ -78,17 +80,14 @@ describe('Orders (e2e)', () => {
   };
 
   const placeOrder = (body: object, idempotencyKey: string) =>
-    request(app.getHttpServer())
+    adminRequest(app)
       .post('/api/orders')
       .set('Idempotency-Key', idempotencyKey)
       .send(body);
 
   const stockOf = async (productId: number) =>
-    (
-      await request(app.getHttpServer())
-        .get(`/api/products/${productId}`)
-        .expect(200)
-    ).body.stock as number;
+    (await adminRequest(app).get(`/api/products/${productId}`).expect(200)).body
+      .stock as number;
 
   const orderCount = async () => {
     const [{ count }] = await dataSource.query<{ count: string }[]>(
@@ -169,12 +168,12 @@ describe('Orders (e2e)', () => {
     ).expect(201);
     const path = `/api/orders/${first.body.reference}`;
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .get(path)
       .set('Cookie', accessCookieOf(first).split(';')[0])
       .expect(200);
-    await request(app.getHttpServer()).get(path).expect(404);
-    await request(app.getHttpServer())
+    await adminRequest(app).get(path).expect(404);
+    await adminRequest(app)
       .get(path)
       .set('Cookie', accessCookieOf(second).split(';')[0])
       .expect(404);
@@ -282,7 +281,7 @@ describe('Orders (e2e)', () => {
       "UPDATE payment_attempts SET status = 'declined', decline_code = 'card_declined'",
     );
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .post(`/api/orders/${reference}/payments`)
       .set('Cookie', accessCookieOf(placed).split(';')[0])
       .set('Idempotency-Key', 'key-second-try-01')
@@ -306,7 +305,7 @@ describe('Orders (e2e)', () => {
       'key-busy-000001',
     ).expect(201);
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .post(`/api/orders/${placed.body.reference}/payments`)
       .set('Cookie', accessCookieOf(placed).split(';')[0])
       .set('Idempotency-Key', 'key-busy-000002')
@@ -324,12 +323,12 @@ describe('Orders (e2e)', () => {
       orderOf([{ productId: shoes.id, quantity: 1 }]),
       'key-snapshot-01',
     ).expect(201);
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch(`/api/products/${shoes.id}`)
       .send({ priceCents: 1, name: 'Renamed', version: 2 })
       .expect(200);
 
-    const { body } = await request(app.getHttpServer())
+    const { body } = await adminRequest(app)
       .get(`/api/orders/${placed.body.reference}`)
       .set('Cookie', accessCookieOf(placed).split(';')[0])
       .expect(200);

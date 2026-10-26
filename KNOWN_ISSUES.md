@@ -31,7 +31,7 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 
 ## Known bugs and limitations
 
-- **No sign-in yet.** Anyone who can reach the API can create, update, delete and import products. Admin sign-in is the next piece of work.
+- **Administrators must be provisioned before catalog writes.** Product mutations require a valid admin session. The saved import portal is introduced separately.
 - **Concurrent catalog changes require a fresh import preview.** A duplicate SKU created during loading returns 409 and rolls back the whole import. Existing stock is preserved unless the admin explicitly opts into updating it.
 - **Flagged payment events have no screen yet.** shop-api answers 200 for a webhook it records but can't apply, such as an amount that doesn't match its order or a second successful payment for an order that is already paid, so payments-api stops resending it. Those events are logged as errors and kept in `processed_payment_events` with the outcome `flagged` and the reason, and a person has to look them up there and refund or fix the order by hand.
 - **A late payment can be missed if all its webhooks fail.** If a payment succeeds after its order was cancelled, and all three deliveries of its webhook fail, shop-api never hears of it, because the reconciliation job only asks about pending orders. The customer is charged for a cancelled order, and the dead event in payments-api's `outbox_events` is the only trace. It needs the order to be cancelled within the seconds a payment is processing, and shop-api to be down for the next 35 seconds. There is no command to resend a dead event yet.

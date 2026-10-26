@@ -1,3 +1,4 @@
+import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AdminAccessGuard } from './access.js';
@@ -15,7 +16,7 @@ import {
     { provide: AdminRepository, useClass: TypeOrmAdminRepository },
     SignInCommandHandler,
     SignOutCommandHandler,
-    AdminAccessGuard,
+    { provide: APP_GUARD, useClass: AdminAccessGuard },
   ],
 })
 export class AdminModule {}

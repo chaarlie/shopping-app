@@ -1,3 +1,4 @@
+import { Public } from '../../admin/access.js';
 import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheck,
@@ -5,6 +6,7 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(

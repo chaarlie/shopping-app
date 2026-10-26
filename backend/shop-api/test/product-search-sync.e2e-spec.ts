@@ -1,7 +1,7 @@
+import { adminRequest, seedAdmin } from './admin-fixture.js';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Client } from '@opensearch-project/opensearch';
-import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
@@ -26,6 +26,7 @@ describe('Product search index sync (e2e)', () => {
 
     app = setupApp(moduleFixture.createNestApplication());
     await app.init();
+    await seedAdmin(app);
     dataSource = app.get(DataSource);
     indexer = app.get(ProductSearchIndexerJob);
     index = app.get(ProductSearchIndex);
@@ -52,7 +53,7 @@ describe('Product search index sync (e2e)', () => {
 
   const addProduct = async (sku: string, name: string) =>
     (
-      await request(app.getHttpServer())
+      await adminRequest(app)
         .post('/api/products')
         .send({ sku, name, category: 'Footwear', priceCents: 1000, stock: 5 })
         .expect(201)
@@ -97,13 +98,11 @@ describe('Product search index sync (e2e)', () => {
     const mug = await addProduct('MG-1', 'Mug');
     await indexer.runOnce();
 
-    await request(app.getHttpServer())
+    await adminRequest(app)
       .patch(`/api/products/${shoes.id}`)
       .send({ name: 'Trail Shoes', version: shoes.version })
       .expect(200);
-    await request(app.getHttpServer())
-      .delete(`/api/products/${mug.id}`)
-      .expect(204);
+    await adminRequest(app).delete(`/api/products/${mug.id}`).expect(204);
     await indexer.runOnce();
 
     expect(await stored(shoes.id)).toEqual({
@@ -115,7 +114,7 @@ describe('Product search index sync (e2e)', () => {
 
   it('follows products renamed by a CSV import', async () => {
     const importCsv = (row: string) =>
-      request(app.getHttpServer())
+      adminRequest(app)
         .post('/api/products/import')
         .attach(
           'file',

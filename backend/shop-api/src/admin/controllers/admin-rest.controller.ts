@@ -24,7 +24,6 @@ import {
 } from '../access.js';
 import { SignInCommand, SignOutCommand } from '../commands/session.command.js';
 
-@UseGuards(AdminAccessGuard)
 @Controller('admin')
 export class AdminRestController {
   constructor(

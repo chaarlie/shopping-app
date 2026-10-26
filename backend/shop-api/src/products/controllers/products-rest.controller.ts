@@ -1,3 +1,4 @@
+import { Public } from '../../admin/access.js';
 import {
   Body,
   Controller,
@@ -40,6 +41,7 @@ export class ProductsRestController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @Public()
   @Get()
   list(
     @Query(new ZodValidationPipe(productSearchQuerySchema))
@@ -50,6 +52,7 @@ export class ProductsRestController {
     );
   }
 
+  @Public()
   @Get(':id')
   getOne(@Param('id', ParseIntPipe) id: number): Promise<Product> {
     return this.queryBus.execute(new GetProductQuery(id));
