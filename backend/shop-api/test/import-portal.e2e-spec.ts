@@ -113,6 +113,49 @@ describe('stored import review', () => {
     const { body: after } = await read();
     expect(after.rows).toEqual(before.rows);
   });
+  it('updates only changed preview results and uses versioned product writes', async () => {
+    const { body: summary } = await upload(
+      csv + '\nPlate,PL-1,White,Kitchen,5.00,3,0.4',
+    ).expect(201);
+    const [before] = await db.query(
+      'SELECT ctid::text AS tuple FROM product_import_rows WHERE import_id=$1 AND row_number=3',
+      [summary.id],
+    );
+    const { body: preview } = await adminRequest(app)
+      .get(`/api/admin/imports/${summary.id}`)
+      .expect(200);
+    const { body: edited } = await adminRequest(app)
+      .patch(`/api/admin/imports/${summary.id}/rows/2`)
+      .send({
+        version: summary.version,
+        values: { ...preview.rows[0].values, name: 'Changed mug' },
+      })
+      .expect(200);
+    const [after] = await db.query(
+      'SELECT ctid::text AS tuple FROM product_import_rows WHERE import_id=$1 AND row_number=3',
+      [summary.id],
+    );
+    expect(after.tuple).toBe(before.tuple);
+    await adminRequest(app)
+      .post(`/api/admin/imports/${summary.id}/apply`)
+      .send({ version: edited.version })
+      .expect(201);
+    const { body: next } = await upload(csv).expect(201);
+    await adminRequest(app)
+      .post(`/api/admin/imports/${next.id}/apply`)
+      .send({ version: next.version })
+      .expect(201);
+    const [product] = await db.query(
+      "SELECT name,version FROM products WHERE sku='MG-1'",
+    );
+    expect(product).toMatchObject({ name: 'Mug', version: 2 });
+    expect(
+      await db.query(
+        'SELECT * FROM product_search_outbox WHERE product_id=(SELECT id FROM products WHERE sku=$1)',
+        ['MG-1'],
+      ),
+    ).not.toHaveLength(0);
+  });
   it('rejects stale import edits and changed catalog previews', async () => {
     const { body: s } = await upload().expect(201);
     await adminRequest(app)

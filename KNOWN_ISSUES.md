@@ -54,3 +54,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - **Fixed import row mapping:** emptying an earlier staged row could shift later validation results and original quarantine checks to the wrong record. Replanning now maps by parsed row number. Previously applied imports are not rewritten; any history produced by the old behavior should be checked against its original file and the catalog.
 
 - Import edit refreshes now preserve the mounted table and draft text. A row may still leave the current view after a save if it no longer matches the selected status or SKU filter. Browser acceptance is pending.
+
+Import persistence now exposes named operations rather than arbitrary SQL to handlers. Both import entry points share the ProductImportWriter and versioned product repository. Preview results use one conditional batch update so unchanged rows are not rewritten.

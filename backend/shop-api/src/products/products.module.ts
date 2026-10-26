@@ -1,3 +1,4 @@
+import { ProductImportWriter } from './import/product-import-writer.js';
 import { ListAdminProductsQueryHandler } from './queries/handlers/list-admin-products-query.handler.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -51,6 +52,7 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     UpdateProductCommandHandler,
     DeleteProductCommandHandler,
     ImportProductsCommandHandler,
+    ProductImportWriter,
     ClaimProductSearchChangesCommandHandler,
     CompleteProductSearchChangesCommandHandler,
     QueueAllProductsForSearchCommandHandler,
@@ -64,6 +66,6 @@ import { TypeOrmProductSearchOutbox } from './search/typeorm-product-search-outb
     ProductSearchIndexerJob,
     ProductSearchRebuilder,
   ],
-  exports: [ProductRepository],
+  exports: [ProductRepository, ProductImportWriter],
 })
 export class ProductsModule {}

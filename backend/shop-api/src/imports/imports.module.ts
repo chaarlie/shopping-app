@@ -1,3 +1,4 @@
+import { ProductsModule } from '../products/products.module.js';
 import { TypeOrmImportRepository } from './repositories/typeorm-import.repository.js';
 import { Module } from '@nestjs/common';
 import { ImportRepository } from './repositories/import.repository.js';
@@ -9,6 +10,7 @@ import {
 } from './queries/handlers/import-query.handler.js';
 import { ImportsRestController } from './controllers/imports-rest.controller.js';
 @Module({
+  imports: [ProductsModule],
   controllers: [ImportsRestController],
   providers: [
     { provide: ImportRepository, useClass: TypeOrmImportRepository },
