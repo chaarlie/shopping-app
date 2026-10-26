@@ -222,3 +222,5 @@ Payment settlement e2e fixtures explicitly set processing payments due using the
 ## Recovery after cancellation
 
 The reconciliation query also selects cancelled orders with unresolved requested/processing attempts. A successful lookup defers their next check by one minute so a batch of unresolved cancellations cannot permanently crowd out other orders. A late success uses the same policy as the webhook path: reserve stock again in the order transaction, or move to refund_pending if it is unavailable. Refunds still happen outside database transactions and use the payment ID as the idempotency key. The reconciliation e2e suite covers lost late successes, unavailable stock, repeated execution and deferred retry eligibility.
+
+The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
