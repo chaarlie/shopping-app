@@ -2,6 +2,20 @@ import { isWebhookSecret } from '@shop/webhook-signature';
 import { z } from 'zod';
 
 export const envSchema = z.object({
+  APP_ORIGIN: z
+    .string()
+    .default('http://localhost:8080')
+    .refine(
+      (value) =>
+        value.split(',').every((origin) => {
+          try {
+            return new URL(origin).origin === origin;
+          } catch {
+            return false;
+          }
+        }),
+      'Use comma-separated origins without trailing slashes',
+    ),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   PAYMENTS_API_URL: z.url({ protocol: /^https?$/ }),
