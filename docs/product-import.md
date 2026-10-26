@@ -73,3 +73,7 @@ The [saved import portal](import-portal.md) stores immutable originals, records 
 ### Review guidance
 
 The review screen groups each row's validation errors, warnings and actions in the first review column. Conflicting duplicates are labeled separately from invalid values. Use “Show rows to fix” to filter the saved preview, then “Compare matching rows” to inspect a SKU. Yellow cells identify differences among the rows on the current page; exclude unwanted versions or correct their values. Editable fields have visible borders and save on blur. The review column stays visible during horizontal scrolling on desktop; on narrow screens it scrolls with the table so it does not obscure the fields. Catalog changes and edit attribution remain in the final column.
+
+### Stable row identity during review
+
+Replanning maps each parsed CSV record number back to its stored original row number, including when earlier records are empty or excluded. Validation, original quarantine errors and duplicate references stay attached to their own rows. An emptied staged row remains an error with an instruction to fill it or exclude it; it cannot load a product. Saved preview/history and loaded products are covered by regression tests.

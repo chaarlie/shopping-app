@@ -50,3 +50,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - **Local configuration:** direct service ports require the debug Compose override and bind only to localhost. Custom hostnames require APP_ORIGIN. Database password variables initialize new volumes; they do not rotate existing roles.
 
 - **Admin provisioning:** YAML is an explicit account creation/replacement input, not continuous synchronization. Removing an entry does not delete the account. Existing accounts are skipped unless --replace-existing is supplied. Local password files are plaintext and must remain private; they are excluded from Git and image build contexts.
+
+- **Fixed import row mapping:** emptying an earlier staged row could shift later validation results and original quarantine checks to the wrong record. Replanning now maps by parsed row number. Previously applied imports are not rewritten; any history produced by the old behavior should be checked against its original file and the catalog.
