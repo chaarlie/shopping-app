@@ -1,4 +1,5 @@
 'use client';
+import { needsOrderUpdates } from '@/lib/order-watch';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useOrder } from './use-order';
@@ -45,9 +46,11 @@ export default function OrderStatus({ reference }: { reference: string }) {
           </p>
         </div>
         <p role="status">
-          {connected
-            ? 'Live updates connected'
-            : 'Checking for updates every 5 seconds'}
+          {!needsOrderUpdates(order)
+            ? 'Order status confirmed'
+            : connected
+              ? 'Live updates connected'
+              : 'Reconnecting · checking for updates every 5 seconds'}
         </p>
         {error && <p role="alert">{error}</p>}
         {order.status === 'pending_payment' && (

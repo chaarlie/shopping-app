@@ -58,3 +58,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 Import persistence now exposes named operations rather than arbitrary SQL to handlers. Both import entry points share the ProductImportWriter and versioned product repository. Preview results use one conditional batch update so unchanged rows are not rewritten.
 
 - Import conflicts now compare only included SKUs and relevant fields. Stock-only sales do not block the default stock-preserving import. Older preview fingerprints require a refresh. Relevant catalog edits, deletion/recreation and concurrent SKU creation still produce 409.
+
+The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
