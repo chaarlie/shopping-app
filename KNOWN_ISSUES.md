@@ -46,3 +46,5 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 - **Import review usability:** errors and actions are grouped together, with explicit duplicate labels and a needs-attention shortcut. Desktop and phone visual acceptance of this refinement remains with the user. Difference highlights compare rows on the current page; large duplicate groups may span pages.
 
 - **Admin orders:** guest names and email addresses are supplied at checkout, not verified identities. The page shows order placement time, not payment settlement time. Browser acceptance remains with the user. Quarantined import rows remain accessible through each import’s Needs attention filter; applied imports are read-only and corrections require another upload.
+
+- **Local configuration:** direct service ports require the debug Compose override and bind only to localhost. Custom hostnames require APP_ORIGIN. Database password variables initialize new volumes; they do not rotate existing roles.
