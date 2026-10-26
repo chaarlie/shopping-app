@@ -1,0 +1,59 @@
+services:
+  minio:
+    build:
+      context: .
+      dockerfile: infra/minio/Dockerfile
+      target: server
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${IMPORT_STORAGE_ACCESS_KEY:-stockroom-local}
+      MINIO_ROOT_PASSWORD: ${IMPORT_STORAGE_SECRET_KEY:-local-only-storage-password}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${APP_ORIGIN:-http://localhost:${APP_PORT:-8080}}
+    ports:
+      - "127.0.0.1:${IMPORT_STORAGE_PORT:-9100}:9000"
+    volumes:
+      - import-objects:/data
+    networks:
+      - edge
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  minio-init:
+    build:
+      context: .
+      dockerfile: infra/minio/Dockerfile
+      target: client
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${IMPORT_STORAGE_ACCESS_KEY:-stockroom-local}
+      MINIO_ROOT_PASSWORD: ${IMPORT_STORAGE_SECRET_KEY:-local-only-storage-password}
+    entrypoint: /bin/sh
+    command:
+      - -ec
+      - |
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing local/stockroom-imports
+        mc anonymous set none local/stockroom-imports
+        mc ilm import local/stockroom-imports <<'JSON'
+        {"Rules":[{"ID":"abandoned-parts","Status":"Enabled","Filter":{"Prefix":""},"AbortIncompleteMultipartUpload":{"DaysAfterInitiation":1}}]}
+        JSON
+    networks:
+      - backend
+  shop-api:
+    environment:
+      IMPORT_STORAGE_ENDPOINT: http://minio:9000
+      IMPORT_STORAGE_PUBLIC_ENDPOINT: ${IMPORT_STORAGE_PUBLIC_ENDPOINT:-http://localhost:${IMPORT_STORAGE_PORT:-9100}}
+      IMPORT_STORAGE_REGION: us-east-1
+      IMPORT_STORAGE_BUCKET: stockroom-imports
+      IMPORT_STORAGE_ACCESS_KEY: ${IMPORT_STORAGE_ACCESS_KEY:-stockroom-local}
+      IMPORT_STORAGE_SECRET_KEY: ${IMPORT_STORAGE_SECRET_KEY:-local-only-storage-password}
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+volumes:
+  import-objects:
