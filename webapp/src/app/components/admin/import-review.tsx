@@ -199,7 +199,7 @@ export default function ImportReview({ id }: { id: string }) {
       <ImportTable
         rows={state.data.rows}
         edit={edit}
-        disabled={busy || !!summary.appliedAt}
+        disabled={!!summary.appliedAt}
         exclude={(row) =>
           void mutate(
             `/rows/${row.row}`,

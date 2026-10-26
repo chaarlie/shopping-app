@@ -1022,3 +1022,7 @@ td strong {
     flex-direction: column;
   }
 }
+
+.import-bar .btn-grey {
+  color: var(--color-ink);
+}

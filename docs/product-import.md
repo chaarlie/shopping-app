@@ -77,3 +77,7 @@ The review screen groups each row's validation errors, warnings and actions in t
 ### Stable row identity during review
 
 Replanning maps each parsed CSV record number back to its stored original row number, including when earlier records are empty or excluded. Validation, original quarantine errors and duplicate references stay attached to their own rows. An emptied staged row remains an error with an instruction to fill it or exclude it; it cannot load a product. Saved preview/history and loaded products are covered by regression tests.
+
+### Editing feedback
+
+Import edits are serialized using the last acknowledged import version. Successful saves refresh the preview without clearing the mounted table, and editable cells keep stable keys and unsaved text. Each cell reports saving, saved or retry feedback. Rows that no longer match an active filter leave that filtered view. The Apply button uses explicit dark text on its light background.

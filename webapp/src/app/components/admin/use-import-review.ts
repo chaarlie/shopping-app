@@ -9,52 +9,104 @@ import {
 } from '@shop/contracts';
 import { useResource } from '@/lib/use-resource';
 import { errorMessage, request } from '@/lib/api';
+import { SerialTasks } from '@/lib/serial-tasks';
 export function useImportReview(id: string, path: string) {
-  const [busy, setBusy] = useState(false);
-  const locked = useRef(false);
+  const [pending, setPending] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const tasks = useRef(new SerialTasks());
+  const acknowledged = useRef<{
+    version: number;
+    rows: Map<number, StagedRow['values']>;
+  }>({ version: 0, rows: new Map() });
   const state = useResource(path, importPreviewSchema);
   const summary = state.data?.summary;
-  async function mutate(path: string, body: unknown, method = 'POST') {
-    if (locked.current) {
-      return;
-    }
-    locked.current = true;
-    setBusy(true);
-    setError('');
-    setNotice('');
+  async function save(
+    action: string,
+    body: Record<string, unknown>,
+    method: string,
+    row?: StagedRow,
+    column?: ProductCsvColumn,
+    value?: string,
+  ) {
+    setPending((count) => count + 1);
     try {
-      await request(`/admin/imports/${id}${path}`, importSummarySchema, {
-        method,
-        body: JSON.stringify(body),
+      await tasks.current.run(async () => {
+        setError('');
+        setNotice('');
+        const version = Math.max(
+          summary?.version ?? 0,
+          acknowledged.current.version,
+        );
+        const values =
+          row && column
+            ? {
+                ...((summary?.version ?? 0) > acknowledged.current.version
+                  ? row.values
+                  : (acknowledged.current.rows.get(row.row) ?? row.values)),
+                [column]: value,
+              }
+            : undefined;
+        const input = values
+          ? editImportRowSchema.parse({ version, values })
+          : { ...body, version };
+        const updated = await request(
+          `/admin/imports/${id}${action}`,
+          importSummarySchema,
+          { method, body: JSON.stringify(input) },
+        );
+        acknowledged.current.version = updated.version;
+        if (row && values) {
+          acknowledged.current.rows.set(row.row, values as StagedRow['values']);
+        }
+        try {
+          const preview = await request(path, importPreviewSchema);
+          state.replace(preview);
+          for (const item of preview.rows) {
+            acknowledged.current.rows.set(item.row, item.values);
+          }
+        } catch {
+          if (state.data) {
+            state.replace({ ...state.data, summary: updated });
+          }
+          setError(
+            'Your change was saved, but the preview could not refresh. Reload the preview before continuing.',
+          );
+        }
+        setNotice(
+          action === '/apply'
+            ? 'Import applied. The catalog is updated.'
+            : 'Changes saved.',
+        );
       });
-      setNotice(
-        path === '/apply'
-          ? 'Import applied. The catalog is updated.'
-          : 'Changes saved.',
-      );
-      state.reload();
     } catch (cause) {
       setError(errorMessage(cause));
+      throw cause;
     } finally {
-      locked.current = false;
-      setBusy(false);
+      setPending((count) => count - 1);
+    }
+  }
+  async function mutate(
+    action: string,
+    body: Record<string, unknown>,
+    method = 'POST',
+  ) {
+    try {
+      await save(action, body, method);
+    } catch {
+      return;
     }
   }
   function edit(row: StagedRow, column: ProductCsvColumn, value: string) {
-    if (!summary) {
-      return;
-    }
-    try {
-      const input = editImportRowSchema.parse({
-        version: summary.version,
-        values: { ...row.values, [column]: value },
-      });
-      void mutate(`/rows/${row.row}`, input, 'PATCH');
-    } catch (cause) {
-      setError(errorMessage(cause));
-    }
+    return save(`/rows/${row.row}`, {}, 'PATCH', row, column, value);
   }
-  return { state, summary, busy, error, notice, mutate, edit };
+  return {
+    state,
+    summary,
+    busy: pending > 0,
+    error: error || state.error || '',
+    notice,
+    mutate,
+    edit,
+  };
 }
