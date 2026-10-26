@@ -6,3 +6,6 @@
 .git
 .env
 .env.*
+
+admins.local.yaml
+admins.local.env

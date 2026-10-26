@@ -123,3 +123,21 @@ Copy `.env.example` to `.env` and set `APP_PORT` before running `docker compose 
 Internal service ports stay fixed, keeping service URLs and health checks consistent. For direct debugging, opt in with `docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build`. The override publishes webapp, shop API, payments API, Postgres and OpenSearch only on localhost, using the host ports in `.env.example`. The webapp's normal browser API requests still use nginx; use the main application URL for full user journeys. Do not use this override for deployment. Service keys and admin authorization still apply.
 
 Existing Compose settings also accept `SHOP_DB_PASSWORD`, `PAYMENTS_DB_PASSWORD`, `POSTGRES_PASSWORD`, `PAYMENTS_API_KEY`, `PAYMENT_WEBHOOK_SECRET` and `ORDER_ACCESS_SECRET`. Local defaults are for development only. Changing database password variables does not rotate passwords in an existing database volume. Use database administration to rotate existing credentials; do not delete volumes containing data you need.
+
+### Provision named admins from YAML
+
+Provisioning is explicit and never runs during normal application startup. After building the application, copy `admins.example.yaml` to `admins.local.yaml`. Add up to 100 accounts with `name`, `email` and `passwordEnv`. Create `admins.local.env` with a corresponding entry such as `REVIEWER_ADMIN_PASSWORD=your-chosen-long-password` (12–256 characters). Choose your own password; the example is not a preconfigured account. Both local files are ignored by Git and excluded from Docker builds. Restrict file access with `chmod 600 admins.local.yaml admins.local.env`.
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.admin.yml run --build --rm admin-provision
+```
+
+The one-off service waits for database migrations, mounts the YAML read-only, and reads passwords from its environment. It validates the entire file before writing, hashes passwords with scrypt, and saves the batch in one transaction. Existing emails are skipped, preserving their names, passwords and active sessions. Every password reference must resolve even for skipped entries. Accounts omitted from the file are never deleted.
+
+To deliberately replace existing names and passwords and revoke their sessions:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.admin.yml run --build --rm admin-provision node dist/admin/provision-admins.js /config/admins.yaml --replace-existing
+```
+
+When running outside Docker, build shop-api first and run `pnpm --filter shop-api admin:provision /absolute/path/admins.local.yaml` with DATABASE_URL and the referenced password variables exported. The existing `admin:bootstrap` command remains available for single-account replacement; unlike the YAML command's default behavior, bootstrap always replaces credentials and revokes sessions. YAML provisioning does not add customer accounts or roles. Production secrets should use a deployment secret store rather than local environment files.

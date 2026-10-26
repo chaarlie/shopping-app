@@ -25,7 +25,8 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "admin:bootstrap": "node dist/admin/bootstrap-admin.js"
+    "admin:bootstrap": "node dist/admin/bootstrap-admin.js",
+    "admin:provision": "node dist/admin/provision-admins.js"
   },
   "dependencies": {
     "@nestjs-cls/transactional": "^4.0.1",
@@ -48,7 +49,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "1.1.2",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.0",
