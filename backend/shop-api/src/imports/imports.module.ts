@@ -1,3 +1,9 @@
+import {
+  ImportUploadJob,
+  ProcessUploadCommandHandler,
+} from './uploads/import-upload.job.js';
+import { ImportUploadJobRepository } from './uploads/import-upload-job.repository.js';
+import { StageUploadCommandHandler } from './uploads/stage-upload-command.handler.js';
 import { UploadsModule } from './uploads/uploads.module.js';
 import { ProductsModule } from '../products/products.module.js';
 import { TypeOrmImportRepository } from './repositories/typeorm-import.repository.js';
@@ -18,6 +24,10 @@ import { ImportsRestController } from './controllers/imports-rest.controller.js'
   imports: [ProductsModule, UploadsModule],
   controllers: [ImportsRestController],
   providers: [
+    ImportUploadJob,
+    ProcessUploadCommandHandler,
+    ImportUploadJobRepository,
+    StageUploadCommandHandler,
     { provide: ImportRepository, useClass: TypeOrmImportRepository },
     ImportReview,
     UploadImportCommandHandler,

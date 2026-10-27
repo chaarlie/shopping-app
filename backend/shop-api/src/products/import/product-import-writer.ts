@@ -8,11 +8,12 @@ export class ProductImportWriter {
   constructor(private readonly products: ProductRepository) {}
   async apply(rows: MatchedProductRow[]): Promise<void> {
     try {
-      await this.products.createMany(
-        rows.flatMap((row) =>
-          row.status === 'create' && row.product ? [row.product] : [],
-        ),
+      const creates = rows.flatMap((row) =>
+        row.status === 'create' && row.product ? [row.product] : [],
       );
+      for (let offset = 0; offset < creates.length; offset += 500) {
+        await this.products.createMany(creates.slice(offset, offset + 500));
+      }
       for (const row of rows) {
         if (row.status === 'update' && row.product && row.existingId !== null) {
           const { sku: _sku, ...changes } = row.product;

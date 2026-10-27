@@ -1,3 +1,4 @@
+import { StoreImportObjects1793051000000 } from './1793051000000-store-import-objects.js';
 import { CreateImportUploads1793050000000 } from './1793050000000-create-import-uploads.js';
 import { ReconcileCancelledOrders1792960000000 } from './1792960000000-reconcile-cancelled-orders.js';
 import { CreateImportPortal1792886500000 } from './1792886500000-create-import-portal.js';
@@ -19,4 +20,5 @@ export const migrations: (new () => MigrationInterface)[] = [
   RecordImportFileErrors1792886600000,
   ReconcileCancelledOrders1792960000000,
   CreateImportUploads1793050000000,
+  StoreImportObjects1793051000000,
 ];

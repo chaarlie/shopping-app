@@ -22,8 +22,14 @@ export interface ProductImportPlan {
   rows: PlannedProductRow[];
 }
 
-export function planProductImport(csv: string): ProductImportPlan {
-  const { columnCount, ignoredColumns, records } = parseProductCsv(csv);
+export function planProductImport(
+  csv: string,
+  maxRows = 20_000,
+): ProductImportPlan {
+  const { columnCount, ignoredColumns, records } = parseProductCsv(
+    csv,
+    maxRows,
+  );
   const filled = records.filter((record) => !isBlank(record));
 
   return {
@@ -75,47 +81,55 @@ function resolveRepeatedSkus(rows: PlannedProductRow[]): PlannedProductRow[] {
   for (const row of rows) {
     const sku = normalizedSku(row);
     if (sku !== '') {
-      rowsBySku.set(sku, [...(rowsBySku.get(sku) ?? []), row]);
+      const group = rowsBySku.get(sku) ?? [];
+      group.push(row);
+      rowsBySku.set(sku, group);
     }
   }
 
-  return rows.map((row) => {
-    const sku = normalizedSku(row);
-    const group = rowsBySku.get(sku) ?? [];
-    const [first] = group;
-
-    if (group.length < 2 || !first) {
-      return row;
+  const decisions = new Map<
+    string,
+    { first: PlannedProductRow; identical: boolean; error: string }
+  >();
+  for (const [sku, group] of rowsBySku) {
+    if (group.length < 2) {
+      continue;
     }
-
+    const first = group[0];
     const identical = group.every(
       (other) =>
         other.product !== null &&
         first.product !== null &&
         sameProduct(other.product, first.product),
     );
-
-    if (identical) {
-      return row === first
+    decisions.set(sku, {
+      first,
+      identical,
+      error: `SKU ${sku} appears on rows ${listRows(group.slice(0, 20))}${group.length > 20 ? ` (additional rows: ${group.length - 20})` : ''} with different values`,
+    });
+  }
+  return rows.map((row) => {
+    const decision = decisions.get(normalizedSku(row));
+    if (!decision) {
+      return row;
+    }
+    if (decision.identical) {
+      return row === decision.first
         ? row
         : {
             ...row,
             status: 'duplicate',
             warnings: [
               ...row.warnings,
-              `Same as row ${first.row}, so it was skipped`,
+              `Same as row ${decision.first.row}, so it was skipped`,
             ],
           };
     }
-
     return {
       ...row,
       status: 'error',
       product: null,
-      errors: [
-        ...row.errors,
-        `SKU ${sku} appears on rows ${listRows(group)} with different values`,
-      ],
+      errors: [...row.errors, decision.error],
     };
   });
 }
