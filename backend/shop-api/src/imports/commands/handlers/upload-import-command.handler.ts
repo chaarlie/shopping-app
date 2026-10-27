@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Transactional } from '@nestjs-cls/transactional';
 import { ImportReview } from '../../import-review.js';
@@ -13,6 +14,7 @@ export class UploadImportCommandHandler implements ICommandHandler<UploadImportC
   constructor(
     private readonly imports: ImportRepository,
     private readonly review: ImportReview,
+    private readonly config: ConfigService,
   ) {}
   @Transactional()
   async execute({ adminId, filename, file }: UploadImportCommand) {
@@ -27,7 +29,10 @@ export class UploadImportCommandHandler implements ICommandHandler<UploadImportC
     };
     let fileError: string | null = null;
     try {
-      plan = planProductImport(file.toString('utf8'));
+      plan = planProductImport(
+        file.toString('utf8'),
+        this.config.get<number>('IMPORT_MAX_ROWS', 5000),
+      );
     } catch (error) {
       if (!(error instanceof ValidationError)) {
         throw error;
