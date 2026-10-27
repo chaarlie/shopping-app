@@ -147,3 +147,9 @@ Import review preserves original row identity when cells are emptied or rows exc
 ## Large import work
 
 The opt-in MinIO/S3 import API accepts 5 MB by default, configurable to 10 MB with `IMPORT_MAX_FILE_BYTES` in `.env`. It processes files through a durable job and preserves atomic review/apply. Start it with `docker compose -f docker-compose.yml -f docker-compose.imports.yml up --build --wait`. The legacy direct upload endpoint remains limited to 1 MB. See [large imports](docs/large-imports.md) for rollout, local storage and validation limits.
+
+### Purchase quantity limit
+
+Set `ORDER_MAX_QUANTITY_PER_PRODUCT=250` in `.env` to allow up to 250 units of each product per order, subject to stock and the existing payment amount limit. The default is 100. Restart/recreate shop-api with your usual `docker compose up --build --wait` command (include the imports override if enabled), then reload the browser. No frontend rebuild is needed for a configuration-only change.
+
+Startup accepts integers from 1 to 1,000,000; the upper bound is a technical input bound rather than the default sales policy. Public `GET /api/orders/settings` supplies the runtime limit to the storefront. The API checks it before reserving stock. Existing carts are preserved when the limit falls and must be adjusted before checkout; replaying an already-created order with its original idempotency key still returns that order. The separate 50-distinct-products and maximum payment amount limits are unchanged.

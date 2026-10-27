@@ -11,12 +11,15 @@ export function AddToCartButton({ product }: { product: Product }) {
   const quantity =
     cart.items.find((item) => item.productId === product.id)?.quantity ?? 0;
   const unavailable = product.stock === 0;
-  const atLimit = quantity >= Math.min(product.stock, 100);
-  const label = unavailable
-    ? `${product.name} is out of stock`
-    : atLimit
-      ? `Maximum quantity of ${product.name} already in cart`
-      : `Add ${product.name} to cart`;
+  const atLimit = quantity >= Math.min(product.stock, cart.maxQuantity ?? 0);
+  const label =
+    cart.maxQuantity === null
+      ? 'Loading checkout settings'
+      : unavailable
+        ? `${product.name} is out of stock`
+        : atLimit
+          ? `Maximum quantity of ${product.name} already in cart`
+          : `Add ${product.name} to cart`;
 
   return (
     <div className="product-cart">
@@ -52,6 +55,15 @@ export function AddToCartButton({ product }: { product: Product }) {
           <circle cx="18" cy="20" r="1" />
         </svg>
       </button>
+      {cart.settingsError && (
+        <button
+          type="button"
+          className="btn-grey"
+          onClick={cart.reloadSettings}
+        >
+          Retry cart settings
+        </button>
+      )}
       <span className="product-cart-notice" role="status">
         {notice}
       </span>

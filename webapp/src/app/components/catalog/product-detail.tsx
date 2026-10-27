@@ -66,17 +66,27 @@ export default function ProductDetail({ id }: { id: string }) {
               <input
                 type="number"
                 min={1}
-                max={Math.min(100, p.stock)}
+                max={Math.min(cart.maxQuantity ?? 0, p.stock)}
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
                 required
-                disabled={!p.stock}
+                disabled={!p.stock || cart.maxQuantity === null}
               />
             </label>
-            <button className="btn-black" disabled={!p.stock}>
+            <button
+              className="btn-black"
+              disabled={!p.stock || cart.maxQuantity === null}
+            >
               {p.stock ? 'Add to cart' : 'Out of stock'}
             </button>
           </form>
+          {cart.settingsError && (
+            <Feedback
+              error
+              message={cart.settingsError}
+              retry={cart.reloadSettings}
+            />
+          )}
           {notice && (
             <p role="status">
               {notice} <Link href="/cart">View cart →</Link>

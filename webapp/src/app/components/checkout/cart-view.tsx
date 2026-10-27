@@ -18,6 +18,18 @@ export default function CartView() {
   if (state.error) {
     return <Feedback error message={state.error} retry={state.reload} />;
   }
+  if (cart.settingsError) {
+    return (
+      <Feedback
+        error
+        message={cart.settingsError}
+        retry={cart.reloadSettings}
+      />
+    );
+  }
+  if (cart.maxQuantity === null) {
+    return <Feedback message="Loading checkout limits…" />;
+  }
   const total = cart.items.reduce(
     (sum, item) =>
       sum +
@@ -27,7 +39,7 @@ export default function CartView() {
   );
   const invalid = cart.items.some((i) => {
     const p = state.products.find((p) => p.id === i.productId);
-    return !p || p.stock < i.quantity;
+    return !p || p.stock < i.quantity || i.quantity > (cart.maxQuantity ?? 0);
   });
   return (
     <div className="split">
@@ -57,11 +69,15 @@ export default function CartView() {
                     aria-label={`Quantity for ${p?.name || 'unavailable product'}`}
                     type="number"
                     min={1}
-                    max={100}
+                    max={Math.min(p?.stock ?? 0, cart.maxQuantity ?? 0)}
                     value={item.quantity}
                     onChange={(e) => {
                       const q = Number(e.target.value);
-                      if (Number.isInteger(q) && q >= 1 && q <= 100) {
+                      if (
+                        Number.isInteger(q) &&
+                        q >= 1 &&
+                        q <= Math.min(p?.stock ?? 0, cart.maxQuantity ?? 0)
+                      ) {
                         cart.setQuantity(item.productId, q);
                       }
                     }}
@@ -74,7 +90,9 @@ export default function CartView() {
                   Remove
                 </button>
               </div>
-              {(!p || p.stock < item.quantity) && (
+              {(!p ||
+                p.stock < item.quantity ||
+                item.quantity > (cart.maxQuantity ?? 0)) && (
                 <p role="alert">
                   Reduce the quantity or remove this product before checkout.
                 </p>

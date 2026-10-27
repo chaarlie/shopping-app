@@ -28,6 +28,29 @@ export default function CheckoutForm() {
   if (state.error) {
     return <Feedback error message={state.error} retry={state.reload} />;
   }
+  if (cart.settingsError) {
+    return (
+      <Feedback
+        error
+        message={cart.settingsError}
+        retry={cart.reloadSettings}
+      />
+    );
+  }
+  if (cart.maxQuantity === null) {
+    return <Feedback message="Loading checkout limits…" />;
+  }
+  if (cart.items.some((item) => item.quantity > cart.maxQuantity!)) {
+    return (
+      <section className="panel">
+        <p role="alert">
+          The limit is {cart.maxQuantity} units per product. Adjust your cart
+          before checkout.
+        </p>
+        <Link href="/cart">Review cart</Link>
+      </section>
+    );
+  }
   const total = cart.items.reduce(
     (sum, i) =>
       sum +

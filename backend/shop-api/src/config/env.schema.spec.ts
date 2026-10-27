@@ -19,6 +19,7 @@ describe('validateEnv', () => {
       IMPORT_MAX_ROWS: 5_000,
       PORT: 3000,
       ORDER_COOKIE_SECURE: true,
+      ORDER_MAX_QUANTITY_PER_PRODUCT: 100,
       OPENSEARCH_INDEX: 'products',
       BACKGROUND_JOBS: 'on',
     });
@@ -93,4 +94,16 @@ it('allows extending uploads to ten MB but rejects an unbounded configuration', 
   expect(() =>
     validateEnv({ ...required, IMPORT_MAX_ROWS: '20001' }),
   ).toThrow();
+});
+
+it('validates configurable purchase quantities', () => {
+  expect(
+    validateEnv({ ...required, ORDER_MAX_QUANTITY_PER_PRODUCT: '250' })
+      .ORDER_MAX_QUANTITY_PER_PRODUCT,
+  ).toBe(250);
+  for (const limit of ['0', '-1', '1.5', 'invalid', '1000001']) {
+    expect(() =>
+      validateEnv({ ...required, ORDER_MAX_QUANTITY_PER_PRODUCT: limit }),
+    ).toThrow('Invalid environment variables');
+  }
 });

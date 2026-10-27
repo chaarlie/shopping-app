@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import type { Response } from 'supertest';
 import { adminRequest, seedAdmin } from './admin-fixture.js';
@@ -96,6 +97,53 @@ describe('Orders (e2e)', () => {
     );
     return Number(count);
   };
+
+  it('exposes and enforces the configured quantity limit before reserving stock', async () => {
+    const config = app.get(ConfigService);
+    const previous = config.get('ORDER_MAX_QUANTITY_PER_PRODUCT');
+    config.set('ORDER_MAX_QUANTITY_PER_PRODUCT', 3);
+    try {
+      await request(app.getHttpServer())
+        .get('/api/orders/settings')
+        .expect(200, { maxQuantityPerProduct: 3 });
+      const product = await addProduct(20);
+      await placeOrder(
+        orderOf([{ productId: product.id, quantity: 4 }]),
+        'configured-limit-rejected',
+      ).expect(400);
+      expect(await stockOf(product.id)).toBe(20);
+      expect(await orderCount()).toBe(0);
+      await placeOrder(
+        orderOf([{ productId: product.id, quantity: 3 }]),
+        'configured-limit-accepted',
+      ).expect(201);
+      expect(await stockOf(product.id)).toBe(17);
+    } finally {
+      config.set('ORDER_MAX_QUANTITY_PER_PRODUCT', previous);
+    }
+  });
+
+  it('accepts more than 100 units when configured and preserves idempotent retries after lowering the limit', async () => {
+    const config = app.get(ConfigService);
+    const previous = config.get('ORDER_MAX_QUANTITY_PER_PRODUCT');
+    config.set('ORDER_MAX_QUANTITY_PER_PRODUCT', 250);
+    try {
+      const product = await addProduct(500, 100);
+      const input = orderOf([{ productId: product.id, quantity: 250 }]);
+      const first = await placeOrder(input, 'configured-limit-large').expect(
+        201,
+      );
+      config.set('ORDER_MAX_QUANTITY_PER_PRODUCT', 100);
+      const replay = await placeOrder(input, 'configured-limit-large').expect(
+        201,
+      );
+      expect(replay.body.reference).toBe(first.body.reference);
+      expect(await stockOf(product.id)).toBe(250);
+      expect(await orderCount()).toBe(1);
+    } finally {
+      config.set('ORDER_MAX_QUANTITY_PER_PRODUCT', previous);
+    }
+  });
 
   it('lists admin orders with immutable purchased items, buyer details and stable pagination', async () => {
     await request(app.getHttpServer()).get('/api/admin/orders').expect(401);

@@ -6,10 +6,15 @@ describe('persisted carts', () => {
       'oops',
       'null',
       '[{"productId":1,"quantity":-1}]',
-      '[{"productId":1,"quantity":101}]',
+      '[{"productId":1,"quantity":1000001}]',
     ]) {
       expect(parseCart(raw)).toEqual([]);
     }
+  });
+  it('preserves quantities above the default for configurable limits', () => {
+    expect(parseCart('[{"productId":1,"quantity":250}]')).toEqual([
+      { productId: 1, quantity: 250 },
+    ]);
   });
   it('never sends duplicate product IDs to checkout', () => {
     expect(

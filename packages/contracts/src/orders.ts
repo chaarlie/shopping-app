@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from './pagination.js';
 import { cardSchema } from './cards.js';
 
+export const maxOrderQuantity = 1_000_000;
+export const checkoutSettingsSchema = z.object({
+  maxQuantityPerProduct: z.number().int().min(1).max(maxOrderQuantity),
+});
+
 export const currencySchema = z.literal('USD');
 
 export type Currency = z.infer<typeof currencySchema>;
@@ -60,7 +65,7 @@ const orderItemInputSchema = z.strictObject({
     .number()
     .int('Quantity must be a whole number')
     .min(1, 'Quantity must be at least 1')
-    .max(100, 'Quantity must be at most 100'),
+    .max(maxOrderQuantity, 'Quantity exceeds the supported maximum'),
 });
 
 export const placeOrderSchema = z.strictObject({

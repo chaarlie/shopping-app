@@ -1,3 +1,5 @@
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../../config/env.schema.js';
 import { Public } from '../../admin/access.js';
 import {
   Body,
@@ -39,12 +41,22 @@ import { GetOrderQuery } from '../queries/get-order.query.js';
 @Controller('orders')
 export class OrdersRestController {
   constructor(
+    private readonly config: ConfigService<Env, true>,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly access: OrderAccess,
     private readonly submitter: PaymentAttemptSubmitter,
     private readonly stream: OrderEventStream,
   ) {}
+
+  @Get('settings')
+  settings() {
+    return {
+      maxQuantityPerProduct: this.config.get('ORDER_MAX_QUANTITY_PER_PRODUCT', {
+        infer: true,
+      }),
+    };
+  }
 
   @Post()
   async place(
