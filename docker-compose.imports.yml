@@ -45,6 +45,8 @@ services:
       - backend
   shop-api:
     environment:
+      IMPORT_MAX_FILE_BYTES: ${IMPORT_MAX_FILE_BYTES:-5000000}
+      IMPORT_MAX_ROWS: ${IMPORT_MAX_ROWS:-5000}
       IMPORT_STORAGE_ENDPOINT: http://minio:9000
       IMPORT_STORAGE_PUBLIC_ENDPOINT: ${IMPORT_STORAGE_PUBLIC_ENDPOINT:-http://localhost:${IMPORT_STORAGE_PORT:-9100}}
       IMPORT_STORAGE_REGION: us-east-1

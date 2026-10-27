@@ -16,6 +16,13 @@ export const envSchema = z.object({
         }),
       'Use comma-separated origins without trailing slashes',
     ),
+  IMPORT_MAX_FILE_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1_000_000)
+    .max(10_000_000)
+    .default(5_000_000),
+  IMPORT_MAX_ROWS: z.coerce.number().int().min(1).max(20_000).default(5_000),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   PAYMENTS_API_URL: z.url({ protocol: /^https?$/ }),
