@@ -61,4 +61,4 @@ Import persistence now exposes named operations rather than arbitrary SQL to han
 
 The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
 
-- Large-file imports are under development. The MinIO storage foundation alone does not enable 5 GB imports. MinIO is built from pinned archived upstream source for local use; full-size processing and recovery acceptance remain outstanding.
+- Object-storage imports are bounded to 5 MB by default, configurable to 10 MB and at most 20,000 records. Processing is bounded in memory, not an unbounded streaming ETL. Completed originals are retained until an explicit retention policy is introduced. MinIO is built from pinned archived upstream source for local use; use a maintained S3 service for deployment. Browser acceptance remains with the user.

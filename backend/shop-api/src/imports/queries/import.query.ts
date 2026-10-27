@@ -24,10 +24,10 @@ export class ImportHistoryQuery extends Query<{
     super();
   }
 }
-export class ImportDownloadQuery extends Query<{
-  filename: string;
-  file: Buffer;
-}> {
+export class ImportDownloadQuery extends Query<
+  | { filename: string; file: Buffer; url?: never }
+  | { filename: string; url: string; file?: never }
+> {
   constructor(public readonly id: number) {
     super();
   }
