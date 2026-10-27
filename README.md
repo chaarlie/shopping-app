@@ -146,4 +146,4 @@ Import review preserves original row identity when cells are emptied or rows exc
 
 ## Large import work
 
-The opt-in MinIO/S3 import API accepts 5 MB by default, configurable to 10 MB with `IMPORT_MAX_FILE_BYTES` in `.env`. It processes files through a durable job and preserves atomic review/apply. Start it with `docker compose -f docker-compose.yml -f docker-compose.imports.yml up --build --wait`. The legacy direct upload endpoint remains limited to 1 MB. See [large imports](docs/large-imports.md) for rollout, local storage and validation limits.
+An opt-in MinIO/S3 multipart upload foundation is being built for large CSV files. The current admin import still accepts files up to 1 MB. See [large imports](docs/large-imports.md) for rollout, local storage and validation limits.

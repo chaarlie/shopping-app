@@ -26,31 +26,30 @@ export class TypeOrmImportRepository extends ImportRepository {
     adminId: number,
     plan: ProductImportPlan,
     fileError: string | null,
-    objectKey?: string,
   ): Promise<number> {
     const [inserted] = await this.query<{ id: number }[]>(
-      'INSERT INTO product_imports(filename,file,sha256,uploaded_by,total_rows,blank_rows,file_error,object_key,file_size) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
+      'INSERT INTO product_imports(filename,file,sha256,uploaded_by,total_rows,blank_rows,file_error) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
       [
         filename,
-        objectKey ? null : file,
+        file,
         createHash('sha256').update(file).digest('hex'),
         adminId,
         plan.totalRows,
         plan.blankRows,
         fileError,
-        objectKey ?? null,
-        objectKey ? file.length : null,
       ],
     );
-    for (let offset = 0; offset < plan.rows.length; offset += 500) {
-      const rows = plan.rows.slice(offset, offset + 500).map((row) => ({
-        row: row.row,
-        values: row.values,
-        errors: row.errors.filter((error) => error.startsWith('Expected ')),
-      }));
+    for (const row of plan.rows) {
       await this.query(
-        `INSERT INTO product_import_rows(import_id,row_number,values,original_errors,result) SELECT $1,p.row,p.values,p.errors,'{}'::jsonb FROM jsonb_to_recordset($2::jsonb) AS p(row integer,values jsonb,errors jsonb)`,
-        [inserted.id, JSON.stringify(rows)],
+        "INSERT INTO product_import_rows(import_id,row_number,values,original_errors,result) VALUES($1,$2,$3,$4,'{}')",
+        [
+          inserted.id,
+          row.row,
+          JSON.stringify(row.values),
+          JSON.stringify(
+            row.errors.filter((error) => error.startsWith('Expected ')),
+          ),
+        ],
       );
     }
     return inserted.id;
@@ -141,11 +140,10 @@ export class TypeOrmImportRepository extends ImportRepository {
   }
   async download(id: number) {
     return (
-      await this.query<
-        { filename: string; file: Buffer | null; object_key: string | null }[]
-      >('SELECT filename,file,object_key FROM product_imports WHERE id=$1', [
-        id,
-      ])
+      await this.query<{ filename: string; file: Buffer }[]>(
+        'SELECT filename,file FROM product_imports WHERE id=$1',
+        [id],
+      )
     )[0];
   }
   async lock(id: number): Promise<StoredImport | undefined> {
@@ -170,7 +168,7 @@ export class TypeOrmImportRepository extends ImportRepository {
     params: unknown[],
   ): Promise<ImportSummary[]> {
     return this.query(
-      `SELECT i.id,i.filename,i.file_error AS "fileError",coalesce(i.file_size,octet_length(i.file)) AS size,i.sha256,u.name AS "uploadedBy",i.uploaded_at::text AS "uploadedAt",a.name AS "appliedBy",i.applied_at::text AS "appliedAt",i.version,i.update_stock AS "updateStock",i.counts,i.total_rows AS "totalRows",i.blank_rows AS "blankRows" FROM product_imports i JOIN admins u ON u.id=i.uploaded_by LEFT JOIN admins a ON a.id=i.applied_by ${where}`,
+      `SELECT i.id,i.filename,i.file_error AS "fileError",octet_length(i.file) AS size,i.sha256,u.name AS "uploadedBy",i.uploaded_at::text AS "uploadedAt",a.name AS "appliedBy",i.applied_at::text AS "appliedAt",i.version,i.update_stock AS "updateStock",i.counts,i.total_rows AS "totalRows",i.blank_rows AS "blankRows" FROM product_imports i JOIN admins u ON u.id=i.uploaded_by LEFT JOIN admins a ON a.id=i.applied_by ${where}`,
       params,
     );
   }
