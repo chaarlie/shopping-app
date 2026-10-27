@@ -1,6 +1,6 @@
 # Product import
 
-`POST /api/products/import` takes a CSV file in a field named `file`, up to 1 MB.
+`POST /api/products/import` takes a CSV file in a field named `file`, up to 5 MB.
 
 - `dryRun=true` returns the report without writing anything.
 - `onExisting=skip` leaves products that already exist untouched. The default, `update`, updates product fields while preserving stock. `updateStock=true` explicitly replaces existing stock.
