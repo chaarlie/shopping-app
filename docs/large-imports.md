@@ -2,7 +2,7 @@
 
 The default maximum is **5,000,000 bytes (5 MB)**. Set `IMPORT_MAX_FILE_BYTES=10000000` in `.env` to allow up to **10 MB**. Startup validation rejects values above 10 MB. `IMPORT_MAX_ROWS` defaults to 5,000 data records and cannot exceed 20,000. The API supplies limits to the browser; it remains the enforcement boundary.
 
-This replaces the proposed 5 GB scope. At these bounded sizes, keep the existing atomic review/apply behavior rather than exposing partially applied imports. The legacy direct upload endpoint remains limited to 1 MB. The upload API and durable processing are implemented; the browser connection follows in the dependent frontend branch.
+This replaces the proposed 5 GB scope. At these bounded sizes, keep the existing atomic review/apply behavior rather than exposing partially applied imports. The legacy direct upload endpoint remains limited to 1 MB. The admin upload screen discovers the server limits, uploads directly to object storage and waits for the saved preview.
 
 ## Run locally
 
@@ -36,7 +36,7 @@ With MinIO running:
 pnpm --filter shop-api exec vitest run --config vitest.config.storage.ts
 ```
 
-These tests perform real presigned PUTs, retry a part, complete and stream the object, reject anonymous reads, and abort unfinished uploads. Processing tests stage and apply catalogs of exactly 5 MB and 10 MB, recover expired leases, fence old workers, reject excessive record counts, and clean expired uploads. Browser-to-storage acceptance follows in the frontend branch. No 5 GB support is claimed.
+These tests perform real presigned PUTs, retry a part, complete and stream the object, reject anonymous reads, and abort unfinished uploads. Processing tests stage and apply catalogs of exactly 5 MB and 10 MB, recover expired leases, fence old workers, reject excessive record counts, and clean expired uploads. Manual browser acceptance is delegated to the user. No 5 GB support is claimed.
 
 ## References
 
@@ -51,3 +51,9 @@ A worker inside shop-api claims one queued file at a time with a ten-minute data
 Staging uses 500-row insert batches inside one transaction. Saving the preview and publishing the upload's import ID share that transaction. A lost worker can retry without duplicate imports; stale lease tokens cannot publish. Transient processing failures retry up to three claims. Malformed CSV is retained as an original with a reviewable file error. Completed originals stay in MinIO, with their SHA-256, byte size and audit metadata in Postgres. Downloads authorize the admin before redirecting to a five-minute presigned URL.
 
 Apply retains a single transaction and existing stock-preservation, duplicate resolution and catalog-conflict rules. Product inserts are chunked inside that transaction to avoid PostgreSQL parameter limits; chunks do not mean partial commits.
+
+## Browser behavior
+
+Part failures retry up to three times with a fresh URL. The progress message distinguishes uploading from preparing the preview. A saved upload ID in session storage lets Resume saved upload recover processing after a refresh in the same tab. Retry upload resends parts from the selected original file. Cancel upload is available before processing; Stop waiting during processing does not cancel the server job. Once ready, the normal review screen opens. With the storage override disabled, the screen keeps the legacy 1 MB upload path.
+
+To test the extension, set `IMPORT_MAX_FILE_BYTES=10000000` in `.env`, start the imports Compose configuration, and use a CSV above 1 MB. Check upload progress, preview, apply, original download, reload/resume and configured-limit rejection.
