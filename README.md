@@ -132,6 +132,23 @@ Provisioning is explicit and never runs during normal application startup. After
 docker compose -f docker-compose.yml -f docker-compose.admin.yml run --build --rm admin-provision
 ```
 
+Alternatively, pass the password from your terminal instead of storing it in the environment file. Keep `passwordEnv: REVIEWER_ADMIN_PASSWORD` in `admins.local.yaml`. The Compose configuration still requires `admins.local.env` to exist; `touch` creates it if missing without overwriting an existing file.
+
+```sh
+touch admins.local.env
+chmod 600 admins.local.yaml admins.local.env
+export REVIEWER_ADMIN_PASSWORD='your-chosen-long-password'
+
+docker compose -f docker-compose.yml -f docker-compose.admin.yml \
+  run --build --rm -e REVIEWER_ADMIN_PASSWORD admin-provision
+
+unset REVIEWER_ADMIN_PASSWORD
+```
+
+Choose a password of 12–256 characters. The explicit `-e` forwards the exported variable into the provisioning container and overrides that variable from `admins.local.env`. For multiple password variables, export each one and repeat `-e VARIABLE_NAME`. A literal password typed into a command may remain in your shell history; `unset` only removes it from the current shell environment.
+
+Provisioning creates admin accounts separately from starting the application. Running the imports Compose stack enables object-storage uploads but does not provision admins.
+
 The one-off service waits for database migrations, mounts the YAML read-only, and reads passwords from its environment. It validates the entire file before writing, hashes passwords with scrypt, and saves the batch in one transaction. Existing emails are skipped, preserving their names, passwords and active sessions. Every password reference must resolve even for skipped entries. Accounts omitted from the file are never deleted.
 
 To deliberately replace existing names and passwords and revoke their sessions:
