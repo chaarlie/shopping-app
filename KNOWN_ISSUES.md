@@ -60,3 +60,5 @@ Import persistence now exposes named operations rather than arbitrary SQL to han
 - Import conflicts now compare only included SKUs and relevant fields. Stock-only sales do not block the default stock-preserving import. Older preview fingerprints require a refresh. Relevant catalog edits, deletion/recreation and concurrent SKU creation still produce 409.
 
 The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
+
+- Large-file imports are under development. The MinIO storage foundation alone does not enable 5 GB imports. MinIO is built from pinned archived upstream source for local use; full-size processing and recovery acceptance remain outstanding.

@@ -143,3 +143,7 @@ docker compose -f docker-compose.yml -f docker-compose.admin.yml run --build --r
 When running outside Docker, build shop-api first and run `pnpm --filter shop-api admin:provision /absolute/path/admins.local.yaml` with DATABASE_URL and the referenced password variables exported. The existing `admin:bootstrap` command remains available for single-account replacement; unlike the YAML command's default behavior, bootstrap always replaces credentials and revokes sessions. YAML provisioning does not add customer accounts or roles. Production secrets should use a deployment secret store rather than local environment files.
 
 Import review preserves original row identity when cells are emptied or rows excluded. Blank edited rows stay quarantined with a correction message; later validation results and original errors remain attached to the correct products.
+
+## Large import work
+
+An opt-in MinIO/S3 multipart upload foundation is being built for large CSV files. The current admin import still accepts files up to 1 MB. See [large imports](docs/large-imports.md) for rollout, local storage and validation limits.

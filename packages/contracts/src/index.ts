@@ -7,3 +7,4 @@ export * from './product-import.js';
 export * from './products.js';
 export * from './admin.js';
 export * from './import-portal.js';
+export * from './import-upload.js';
