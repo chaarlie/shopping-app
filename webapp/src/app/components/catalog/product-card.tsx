@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Product } from '@shop/contracts';
 import { money } from '@/lib/format';
+import { AddToCartButton } from './add-to-cart-button';
 
 export function ProductArt({ category }: { category: string }) {
   return (
@@ -39,6 +40,7 @@ export default function ProductCard({ product }: { product: Product }) {
               : 'In stock'}
         </span>
       </div>
+      <AddToCartButton product={product} />
     </article>
   );
 }

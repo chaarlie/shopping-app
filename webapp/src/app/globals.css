@@ -1026,3 +1026,23 @@ td strong {
 .import-bar .btn-grey {
   color: var(--color-ink);
 }
+
+.product-cart {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.product-cart-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.product-cart-notice {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

@@ -19,3 +19,5 @@ Run `pnpm --filter webapp dev --port 3107`. Development forwards `/api` to `SHOP
 - Shared `lib` contains transport, formatting, persistence and input conversion; it does not own page markup.
 
 Manual acceptance checks (user-owned): create/edit/delete a product, duplicate SKU correction, stale edit reload, import edits/exclusions and history, category/search/pagination, empty/error states, and desktop/phone layouts. The browser pass already confirmed sign-in, challenge CSV import, exact SKU search, cart, decline and successful retry. No further automated browser interaction is required by the user.
+
+Product cards on the home page and catalog offer an accessible cart-icon button that adds one unit without navigating. The shared cart enforces stock and quantity limits; the button disables when unavailable or at the limit and announces the result.
