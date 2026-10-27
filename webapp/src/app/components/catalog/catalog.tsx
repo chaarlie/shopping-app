@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   categoryListSchema,
@@ -10,6 +9,7 @@ import {
 import { useResource } from '@/lib/use-resource';
 import { Feedback, Pagination } from '../feedback';
 import ProductCard from './product-card';
+import { CatalogFilters } from './catalog-filters';
 
 export default function Catalog() {
   const router = useRouter();
@@ -47,56 +47,14 @@ export default function Catalog() {
         </h1>
         <p>Find your everyday essentials.</p>
       </div>
-      <form
-        className="catalog-toolbar"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const data = new FormData(event.currentTarget);
-          change({
-            q: String(data.get('q') || '').trim(),
-            category: String(data.get('category') || ''),
-            sort: String(data.get('sort') || ''),
-          });
-        }}
+      <CatalogFilters
         key={params.toString()}
-      >
-        <label>
-          Search
-          <input
-            name="q"
-            type="search"
-            maxLength={100}
-            defaultValue={params.get('q') || ''}
-            placeholder="Product name or SKU"
-          />
-        </label>
-        <label>
-          Category
-          <select name="category" defaultValue={params.get('category') || ''}>
-            <option value="">All categories</option>
-            {categories.data?.items.map((c) => (
-              <option key={c.name} value={c.name}>
-                {c.name} ({c.productCount})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sort
-          <select name="sort" defaultValue={params.get('sort') || ''}>
-            <option value="">Recommended</option>
-            <option value="relevance">Relevance</option>
-            <option value="name">Name</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
-            <option value="newest">Newest</option>
-          </select>
-        </label>
-        <button className="btn-black">Search</button>
-        <Link className="btn-grey" href="/shop">
-          Clear
-        </Link>
-      </form>
+        query={params.get('q') || ''}
+        category={params.get('category') || ''}
+        sort={params.get('sort') || ''}
+        categories={categories.data?.items ?? []}
+        onSearch={change}
+      />
       {categories.error && (
         <p role="status">
           Category filters are unavailable. You can still search or browse.

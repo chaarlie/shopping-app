@@ -13,9 +13,11 @@ Run `pnpm --filter webapp dev --port 3107`. Development forwards `/api` to `SHOP
 ## Component boundaries
 
 - Route pages choose the feature component and pass route parameters.
-- `catalog` owns browsing, search and product presentation.
+- `catalog` owns browsing, search and product presentation. `CatalogFilters` renders the search form; `Catalog` owns URL state and fetching. Search remains submit-based.
 - `checkout` owns cart, payment forms and order display. `useOrder` owns event subscriptions, polling, cancellation and version ordering.
 - `admin` owns catalog management and import review. `useImportReview` owns mutations, validation, concurrency locks and reloads; `ImportTable` owns editable cell rendering.
+- `useImportUpload` owns upload requests, cancellation, saved-session recovery and progress. `ImportUpload` renders the form; `ImportReviewFilters` renders controlled review filters without owning request state.
+- `ui` contains reusable HTML primitives. `Button` preserves native props and refs, defaults to `type="button"`, and uses existing design-token classes; form submissions explicitly opt into `type="submit"`. Links remain links.
 - Shared `lib` contains transport, formatting, persistence and input conversion; it does not own page markup.
 
 Manual acceptance checks (user-owned): create/edit/delete a product, duplicate SKU correction, stale edit reload, import edits/exclusions and history, category/search/pagination, empty/error states, and desktop/phone layouts. The browser pass already confirmed sign-in, challenge CSV import, exact SKU search, cart, decline and successful retry. No further automated browser interaction is required by the user.

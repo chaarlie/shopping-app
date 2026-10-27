@@ -1,9 +1,11 @@
 'use client';
+import { Button } from '../ui/button';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useImportReview } from './use-import-review';
 import { Feedback, Pagination } from '../feedback';
 import ImportTable from './import-table';
+import { ImportReviewFilters } from './import-review-filters';
 export default function ImportReview({ id }: { id: string }) {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('all');
@@ -76,8 +78,8 @@ export default function ImportReview({ id }: { id: string }) {
               do next.
             </p>
           </div>
-          <button
-            className="btn-grey"
+          <Button
+            variant="secondary"
             onClick={() => {
               setSku('');
               setStatus('error');
@@ -85,7 +87,7 @@ export default function ImportReview({ id }: { id: string }) {
             }}
           >
             Show rows to fix
-          </button>
+          </Button>
         </section>
       )}
       <div className="panel stack">
@@ -118,15 +120,15 @@ export default function ImportReview({ id }: { id: string }) {
             Download original
           </a>
           {!summary.appliedAt && (
-            <button
-              className="btn-grey"
+            <Button
+              variant="secondary"
               disabled={busy}
               onClick={() =>
                 void mutate('/refresh', { version: summary.version })
               }
             >
               Refresh catalog comparison
-            </button>
+            </Button>
           )}
           <Link href="/admin/imports">Import history</Link>
         </div>
@@ -134,68 +136,25 @@ export default function ImportReview({ id }: { id: string }) {
       {error && (
         <div className="feedback feedback-error" role="alert">
           <p>{error}</p>
-          <button className="btn-grey" onClick={state.reload}>
+          <Button variant="secondary" onClick={state.reload}>
             Reload preview
-          </button>
+          </Button>
         </div>
       )}
       {notice && <p role="status">{notice}</p>}
-      <div className="catalog-toolbar">
-        <label>
-          Rows
-          <select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-          >
-            {[
-              'all',
-              'create',
-              'update',
-              'unchanged',
-              'duplicate',
-              'error',
-              'excluded',
-            ].map((s) => (
-              <option value={s} key={s}>
-                {
-                  {
-                    all: 'All rows',
-                    create: 'New products',
-                    update: 'Product updates',
-                    unchanged: 'No changes',
-                    duplicate: 'Identical duplicates',
-                    error: 'Needs attention',
-                    excluded: 'Excluded rows',
-                  }[s]
-                }
-              </option>
-            ))}
-          </select>
-        </label>
-        {sku && (
-          <div className="import-comparison">
-            <strong>Compare versions of {sku}</strong>
-            <p>
-              Yellow cells show different values. Exclude the unwanted rows to
-              keep one version, or correct a SKU if these are different
-              products. Changes save when you leave a cell.
-            </p>
-            <button
-              className="btn-grey"
-              onClick={() => {
-                setSku('');
-                setStatus('all');
-                setPage(1);
-              }}
-            >
-              Back to all rows
-            </button>
-          </div>
-        )}
-      </div>
+      <ImportReviewFilters
+        status={status}
+        sku={sku}
+        onStatusChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+        onClearComparison={() => {
+          setSku('');
+          setStatus('all');
+          setPage(1);
+        }}
+      />
       <ImportTable
         rows={state.data.rows}
         edit={edit}
@@ -229,13 +188,13 @@ export default function ImportReview({ id }: { id: string }) {
               SKU conflicts block applying.
             </p>
           </div>
-          <button
-            className="btn-grey"
+          <Button
+            variant="secondary"
             disabled={busy}
             onClick={() => void mutate('/apply', { version: summary.version })}
           >
             {busy ? 'Saving…' : 'Apply import'}
-          </button>
+          </Button>
         </aside>
       )}
     </>
