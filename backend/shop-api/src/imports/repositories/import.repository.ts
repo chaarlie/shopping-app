@@ -26,7 +26,6 @@ export abstract class ImportRepository {
     adminId: number,
     plan: ProductImportPlan,
     fileError: string | null,
-    objectKey?: string,
   ): Promise<number>;
   abstract editRow(
     id: number,
@@ -56,10 +55,7 @@ export abstract class ImportRepository {
   ): Promise<{ items: ImportSummary[]; total: number }>;
   abstract download(
     id: number,
-  ): Promise<
-    | { filename: string; file: Buffer | null; object_key: string | null }
-    | undefined
-  >;
+  ): Promise<{ filename: string; file: Buffer } | undefined>;
   abstract lock(id: number): Promise<StoredImport | undefined>;
   abstract rows(id: number): Promise<StoredRow[]>;
   abstract summary(id: number): Promise<ImportSummary | undefined>;

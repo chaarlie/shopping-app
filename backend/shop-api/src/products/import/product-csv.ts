@@ -16,8 +16,8 @@ export interface ProductCsv {
   records: ProductCsvRecord[];
 }
 
-export function parseProductCsv(text: string, maxRows = 20_000): ProductCsv {
-  const [header, ...data] = readRecords(text, maxRows);
+export function parseProductCsv(text: string): ProductCsv {
+  const [header, ...data] = readRecords(text);
 
   if (!header) {
     throw new ValidationError('The file is empty');
@@ -52,17 +52,10 @@ export function parseProductCsv(text: string, maxRows = 20_000): ProductCsv {
   };
 }
 
-function readRecords(text: string, maxRows: number): string[][] {
+function readRecords(text: string): string[][] {
   try {
     return parse(text, {
       bom: true,
-      max_record_size: 100_000,
-      on_record: (record: string[], context) => {
-        if (context.records > maxRows + 1) {
-          throw new ValidationError(`CSV exceeds the ${maxRows} row limit`);
-        }
-        return record;
-      },
       relax_column_count: true,
       skip_empty_lines: false,
     });
