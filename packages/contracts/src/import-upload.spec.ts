@@ -7,13 +7,13 @@ import {
   uploadPartNumberSchema,
 } from "./import-upload.js";
 describe("large import upload contract", () => {
-  it("accepts exactly five decimal gigabytes and rejects the next byte", () => {
+  it("accepts exactly ten decimal megabytes and rejects the next byte", () => {
     expect(
       startImportUploadSchema.parse({
         filename: "products.csv",
         size: MAX_IMPORT_BYTES,
       }).size,
-    ).toBe(5_000_000_000);
+    ).toBe(10_000_000);
     expect(
       startImportUploadSchema.safeParse({
         filename: "products.csv",
