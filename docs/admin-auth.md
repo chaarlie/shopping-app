@@ -15,3 +15,7 @@ Global enforcement now protects catalog writes. Health, browsing, categories and
 `GET /api/admin/products` provides authenticated, paginated product management with name/SKU filtering and an out-of-stock reorder filter. It reads Postgres directly so administrators can manage products while the search index is unavailable.
 
 Request logs are JSON records with a generated request ID, resolved admin ID, method, path, status and duration. Passwords, cookies and request bodies are excluded. Import history and edit records are the persistent audit trail; operational logs are separate.
+
+## Docker provisioning
+
+See [Provision named admins from YAML](../README.md#provision-named-admins-from-yaml) for file-based passwords and the terminal `export` / `run -e` alternative. The YAML references environment variable names, not passwords. The configured environment file must exist even when passwords are forwarded from the terminal. Provisioning is an explicit command; starting the application or MinIO does not create accounts. Existing accounts are skipped unless replacement is explicitly requested.
