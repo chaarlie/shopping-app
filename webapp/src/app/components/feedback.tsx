@@ -1,3 +1,4 @@
+import { Button } from './ui/button';
 import Link from 'next/link';
 
 export function Feedback({
@@ -16,9 +17,9 @@ export function Feedback({
     >
       <p>{message}</p>
       {retry && (
-        <button className="btn-grey" onClick={retry}>
+        <Button variant="secondary" onClick={retry}>
           Try again
-        </button>
+        </Button>
       )}
       {error && <Link href="/shop">Browse all products</Link>}
     </div>
@@ -42,23 +43,23 @@ export function Pagination({
   );
   return (
     <nav className="pagination" aria-label="Pagination">
-      <button
-        className="btn-grey"
+      <Button
+        variant="secondary"
         disabled={page <= 1}
         onClick={() => onPage(page - 1)}
       >
         Previous
-      </button>
+      </Button>
       <span>
         Page {page} of {Math.max(1, pages)} · {total} results
       </span>
-      <button
-        className="btn-grey"
+      <Button
+        variant="secondary"
         disabled={page >= pages}
         onClick={() => onPage(page + 1)}
       >
         Next
-      </button>
+      </Button>
       {total > 10000 && (
         <p>Narrow your search to see results beyond the first 10,000.</p>
       )}
