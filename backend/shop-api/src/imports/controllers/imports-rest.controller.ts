@@ -91,13 +91,17 @@ export class ImportsRestController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.queries.execute(new ImportDownloadQuery(id));
+    if (result.url) {
+      response.redirect(302, result.url);
+      return;
+    }
     response.setHeader(
       'Content-Disposition',
       `attachment; filename="import-${id}.csv"; filename*=UTF-8''${encodeURIComponent(result.filename).replace(/'/g, '%27')}`,
     );
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
     response.setHeader('X-Content-Type-Options', 'nosniff');
-    return new StreamableFile(result.file);
+    return new StreamableFile(result.file!);
   }
   @Patch(':id/rows/:row')
   edit(

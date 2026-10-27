@@ -1,3 +1,4 @@
+import { ImportObjectStore } from '../../storage/import-object-store.js';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { NotFoundError } from '../../../common/errors.js';
 import { ImportRepository } from '../../repositories/import.repository.js';
@@ -33,12 +34,23 @@ export class ImportHistoryQueryHandler implements IQueryHandler<ImportHistoryQue
 }
 @QueryHandler(ImportDownloadQuery)
 export class ImportDownloadQueryHandler implements IQueryHandler<ImportDownloadQuery> {
-  constructor(private readonly imports: ImportRepository) {}
+  constructor(
+    private readonly imports: ImportRepository,
+    private readonly store: ImportObjectStore,
+  ) {}
   async execute({ id }: ImportDownloadQuery) {
     const file = await this.imports.download(id);
     if (!file) {
       throw new NotFoundError('Import not found');
     }
-    return file;
+    if (!file.object_key && !file.file) {
+      throw new NotFoundError('Original file unavailable');
+    }
+    return file.object_key
+      ? {
+          filename: file.filename,
+          url: await this.store.download(file.object_key, file.filename),
+        }
+      : { filename: file.filename, file: file.file! };
   }
 }
