@@ -9,7 +9,7 @@ Every row gets one of these statuses:
 
 ```mermaid
 flowchart TD
-    file["CSV file, up to 1 MB"] --> columns{"Valid CSV with all 7 columns?"}
+    file["CSV file, up to 5 MB"] --> columns{"Valid CSV with all 7 columns?"}
     columns -->|no| rejected["400, nothing imported"]
     columns -->|yes| row["Each row"]
 
