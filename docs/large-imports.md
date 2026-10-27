@@ -1,36 +1,42 @@
-# Large CSV imports
+# Object-storage CSV imports
 
-The user requested direct S3-compatible uploads and a path to files up to **5,000,000,000 bytes**. This is additional scope beyond the challenge. The existing 1 MB synchronous import remains available.
+The default maximum is **5,000,000 bytes (5 MB)**. Set `IMPORT_MAX_FILE_BYTES=10000000` in `.env` to allow up to **10 MB**. Startup validation rejects values above 10 MB. `IMPORT_MAX_ROWS` defaults to 5,000 data records and cannot exceed 20,000. The API supplies limits to the browser; it remains the enforcement boundary.
 
-## Rollout
+This replaces the proposed 5 GB scope. At these bounded sizes, keep the existing atomic review/apply behavior rather than exposing partially applied imports. The legacy direct upload endpoint remains limited to 1 MB. The new upload API is ready; background processing and the UI follow in dependent branches.
 
-1. Storage and contracts: private MinIO bucket, S3 adapter, fixed 16 MiB multipart chunks and boundary tests.
-2. Authenticated upload sessions: generated keys, server-side part verification, completion and cancellation.
-3. Durable jobs and streamed staging: bounded batches, whole-file duplicate detection and crash recovery.
-4. Paginated review and resumable apply, with explicit partial completion semantics for large imports.
-5. Browser progress, retries and recovery; full-size acceptance tests.
-
-The foundation does not yet enable large uploads in the admin screen. Do not claim 5 GB import support before processing and recovery have been tested at that size.
-
-## Local storage
+## Run locally
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.imports.yml up --build --wait
 ```
 
-The S3 endpoint is `http://localhost:9100`; `IMPORT_STORAGE_PORT` changes its port. `IMPORT_STORAGE_PUBLIC_ENDPOINT` is the browser-reachable origin used for signatures; `IMPORT_STORAGE_ENDPOINT` is the internal endpoint. Signatures must be generated for the endpoint the browser actually uses. `APP_ORIGIN` configures CORS. The bucket is private. Multipart URLs expire after 15 minutes; authorized download URLs after five minutes. Unfinished multipart uploads expire after one day; completed objects are not deleted by that rule.
+The S3 endpoint defaults to `http://localhost:9100`. `IMPORT_STORAGE_PORT` changes its port. `IMPORT_STORAGE_PUBLIC_ENDPOINT` must be reachable by the browser; `IMPORT_STORAGE_ENDPOINT` is internal. Presigned requests must use the same host used when signing. `APP_ORIGIN` configures browser CORS. All buckets and files remain private.
 
-MinIO's public repositories are archived and its former Docker images are unavailable. The local-only Dockerfile builds the server and client from pinned official source commits. This adds initial build time. The adapter uses AWS SDK v3 rather than MinIO-specific APIs, allowing a maintained S3 service later. Local credentials are Compose defaults only; set independent credentials outside local development. MinIO is AGPL-3.0; see its upstream license before redistributing or deploying it.
+The server generates object keys. Authenticated admins start a session with filename and size, request part URLs and ask the API to complete or cancel the upload. Chunks are 5 MiB, the S3 multipart minimum for non-final parts; a file below that size has one part. URLs expire after 15 minutes. Authorized downloads expire after five minutes.
 
-## Tests
+The API lists stored parts and verifies exact numbers and lengths, then checks the completed object's size. It never trusts client-supplied ETags or a declared size alone. Completion has a five-minute lease and recovers ambiguous storage responses using HEAD. Sessions expire after 24 hours. MinIO's stale multipart cleanup runs hourly for uploads older than 24 hours; it does not delete completed originals. There are at most two active sessions per admin and 100 MB of declared active capacity globally. Disk capacity and retained originals still need operational monitoring.
+
+## Transactions and recovery
+
+Storage network calls run outside database transactions through explicit `Propagation.NotSupported` orchestration handlers. Individual state transitions are atomic compare-and-set operations. Quota checks use a short database transaction. The queued session is the durable job record; the worker must finish staging and publish its import reference in one transaction so retries cannot duplicate imports.
+
+## Storage choice
+
+MinIO is a local S3-compatible test service. Its public repositories are archived and former Docker images are unavailable, so the Dockerfile builds pinned official source revisions. The initial build needs internet access and is slower. Local credentials live only in Compose defaults. Do not use these credentials outside local development. MinIO is AGPL-3.0; see the upstream license when redistributing it.
+
+For AWS, retain the multipart API and browser flow, configure the bucket/region/CORS, use an IAM role instead of static credentials, select standard S3 addressing, and configure an incomplete-multipart lifecycle rule. The current adapter is configured for local path-style storage; AWS deployment is not part of this change.
+
+## Validation
+
+The full repository checks cover lint, build, types, unit tests and both API e2e suites. The upload API tests cover anonymous requests, ownership, quotas, configured limits, incorrect stored lengths, cancellation and retry after storage completed but its response was lost.
+
+With MinIO running:
 
 ```sh
 pnpm --filter shop-api exec vitest run --config vitest.config.storage.ts
 ```
 
-Start MinIO and its initializer first. The tests use real presigned PUTs, retry a part, complete and read the file, reject anonymous reads, and cancel unfinished uploads. Boundary contract tests distinguish decimal GB from GiB. This small multipart test is not a 5 GB load test.
-
-The acceptance suite must eventually generate a full-size CSV, check peak memory, verify exact row counts, interrupt each phase and prove recovery without repeated product writes. A file-size limit also needs row/record bounds and storage capacity controls; file size alone does not bound staging expansion.
+These tests perform real presigned PUTs, retry a part, complete and stream the object, reject anonymous reads, and abort unfinished uploads. Processing and full 5/10 MB acceptance are checked in the dependent worker/UI branches. No 5 GB support is claimed.
 
 ## References
 

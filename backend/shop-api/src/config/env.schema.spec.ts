@@ -15,6 +15,8 @@ describe('validateEnv', () => {
     expect(validateEnv(required)).toEqual({
       ...required,
       APP_ORIGIN: 'http://localhost:8080',
+      IMPORT_MAX_FILE_BYTES: 5_000_000,
+      IMPORT_MAX_ROWS: 5_000,
       PORT: 3000,
       ORDER_COOKIE_SECURE: true,
       OPENSEARCH_INDEX: 'products',
@@ -78,4 +80,17 @@ describe('validateEnv', () => {
       DATABASE_URL: databaseUrl,
     });
   });
+});
+
+it('allows extending uploads to ten MB but rejects an unbounded configuration', () => {
+  expect(
+    validateEnv({ ...required, IMPORT_MAX_FILE_BYTES: '10000000' })
+      .IMPORT_MAX_FILE_BYTES,
+  ).toBe(10_000_000);
+  expect(() =>
+    validateEnv({ ...required, IMPORT_MAX_FILE_BYTES: '10000001' }),
+  ).toThrow();
+  expect(() =>
+    validateEnv({ ...required, IMPORT_MAX_ROWS: '20001' }),
+  ).toThrow();
 });
