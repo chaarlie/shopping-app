@@ -1,3 +1,5 @@
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../../../config/env.schema.js';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Transactional } from '@nestjs-cls/transactional';
 import {
@@ -17,6 +19,7 @@ import { PlaceOrderCommand } from '../place-order.command.js';
 @CommandHandler(PlaceOrderCommand)
 export class PlaceOrderCommandHandler implements ICommandHandler<PlaceOrderCommand> {
   constructor(
+    private readonly config: ConfigService<Env, true>,
     private readonly orders: OrderRepository,
     private readonly products: ProductRepository,
   ) {}
@@ -40,6 +43,15 @@ export class PlaceOrderCommandHandler implements ICommandHandler<PlaceOrderComma
       }
 
       return { order: existing.order, attempt: existing.attempts[0] };
+    }
+
+    const limit = this.config.get('ORDER_MAX_QUANTITY_PER_PRODUCT', {
+      infer: true,
+    });
+    if (input.items.some((item) => item.quantity > limit)) {
+      throw new ValidationError(
+        `Quantity must be at most ${limit} per product`,
+      );
     }
 
     const pricing = priceCart(input.items, products);

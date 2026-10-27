@@ -1,3 +1,4 @@
+import { CheckoutSettingsProvider } from '@/lib/checkout-settings';
 import { Suspense } from 'react';
 import Header from './components/header';
 import Footer from './components/footer';
@@ -20,20 +21,22 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={interTight.variable}>
       <body>
-        <div className="wrap">
-          <a className="skip-link" href="#main">
-            Skip to content
-          </a>
-          <Suspense>
-            <Header />
-          </Suspense>
-          <main id="main">
-            <Suspense fallback={<p role="status">Loading…</p>}>
-              {children}
+        <CheckoutSettingsProvider>
+          <div className="wrap">
+            <a className="skip-link" href="#main">
+              Skip to content
+            </a>
+            <Suspense>
+              <Header />
             </Suspense>
-          </main>
-          <Footer />
-        </div>
+            <main id="main">
+              <Suspense fallback={<p role="status">Loading…</p>}>
+                {children}
+              </Suspense>
+            </main>
+            <Footer />
+          </div>
+        </CheckoutSettingsProvider>
       </body>
     </html>
   );

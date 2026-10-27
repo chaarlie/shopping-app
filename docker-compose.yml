@@ -61,6 +61,7 @@ services:
       PAYMENT_WEBHOOK_SECRET: *payment-webhook-secret
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:${APP_PORT:-8080},http://localhost:3107}
       ORDER_ACCESS_SECRET: ${ORDER_ACCESS_SECRET:-local-only-order-access-secret-change-me}
+      ORDER_MAX_QUANTITY_PER_PRODUCT: ${ORDER_MAX_QUANTITY_PER_PRODUCT:-100}
       ORDER_COOKIE_SECURE: "false"
       OPENSEARCH_URL: http://opensearch:9200
     depends_on:

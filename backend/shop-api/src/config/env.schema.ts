@@ -1,3 +1,4 @@
+import { maxOrderQuantity } from '@shop/contracts';
 import { isWebhookSecret } from '@shop/webhook-signature';
 import { z } from 'zod';
 
@@ -16,6 +17,12 @@ export const envSchema = z.object({
         }),
       'Use comma-separated origins without trailing slashes',
     ),
+  ORDER_MAX_QUANTITY_PER_PRODUCT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(maxOrderQuantity)
+    .default(100),
   IMPORT_MAX_FILE_BYTES: z.coerce
     .number()
     .int()
