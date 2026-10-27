@@ -31,6 +31,7 @@ That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. 
 
 ## Known bugs and limitations
 
+- **Concrete payment implementation.** The payments API provides the unfinished command handler where the payment provider integration should be placed. For more information refer to justification at the [handler](https://github.com/chaarlie/shopping-app/blob/3f189c737431ef62479d5a3f4ebe2cac3d1a420a/backend/payments-api/src/payments/commands/handlers/create-payment-command.handler.ts#L31).
 - **Administrators must be provisioned before catalog writes.** Product mutations require a valid admin session. The saved import portal requires the same session.
 - **Concurrent catalog changes require a fresh import preview.** A duplicate SKU created during loading returns 409 and rolls back the whole import. Existing stock is preserved unless the admin explicitly opts into updating it.
 - **Flagged payment events have no screen yet.** shop-api answers 200 for a webhook it records but can't apply, such as an amount that doesn't match its order or a second successful payment for an order that is already paid, so payments-api stops resending it. Those events are logged as errors and kept in `processed_payment_events` with the outcome `flagged` and the reason, and a person has to look them up there and refund or fix the order by hand.
