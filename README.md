@@ -17,7 +17,7 @@ Then open http://localhost:8080. The API is served under http://localhost:8080/a
 Import the example file, then search it. The first search can take a second while the index fills:
 
 ```sh
-curl -s -X POST localhost:8080/api/products/import -F "file=@backend/Code Challenge E-Commerce.csv"
+curl -s -X POST localhost:8080/api/products/import -F "file=@backend/sample-data/products.csv"
 
 curl -s 'localhost:8080/api/products?q=runing%20shoes'
 curl -s 'localhost:8080/api/products?q=wireless&category=Electronics&sort=price_asc'
@@ -53,10 +53,10 @@ The order answers `pending_payment` at once. The stream then shows it paid about
 
 The example file provided with the challenge, `Code Challenge E-Commerce.csv`, was downloaded on **2026-10-20** from the challenge email.
 
-It is stored unchanged at [`backend/Code Challenge E-Commerce.csv`](backend/Code%20Challenge%20E-Commerce.csv), and `.gitattributes` keeps git from converting its CRLF line endings. Its SHA-256 is `6fc46b84badb1ac37b8b19a2d0741aa7728d6c93a9fe949b19f676892dc8fd24`, which you can check with:
+It is stored unchanged at [`backend/sample-data/products.csv`](backend/sample-data/products.csv), and `.gitattributes` keeps git from converting its CRLF line endings. Its SHA-256 is `6fc46b84badb1ac37b8b19a2d0741aa7728d6c93a9fe949b19f676892dc8fd24`, which you can check with:
 
 ```sh
-shasum -a 256 "backend/Code Challenge E-Commerce.csv"
+shasum -a 256 backend/sample-data/products.csv
 ```
 
 ## Design

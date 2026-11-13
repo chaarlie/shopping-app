@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { ValidationError } from '../../common/errors.js';
 import { planProductImport, ProductImportPlan } from './plan-product-import.js';
 
-const challengeCsv = readFileSync(
+const sampleCsv = readFileSync(
   fileURLToPath(
-    new URL('../../../../Code Challenge E-Commerce.csv', import.meta.url),
+    new URL('../../../../sample-data/products.csv', import.meta.url),
   ),
   'utf8',
 );
@@ -22,8 +22,8 @@ function rowOf(plan: ProductImportPlan, row: number) {
   return found;
 }
 
-describe('planProductImport with the challenge CSV', () => {
-  const plan = planProductImport(challengeCsv);
+describe('planProductImport with the sample CSV', () => {
+  const plan = planProductImport(sampleCsv);
   const row = (number: number) => rowOf(plan, number);
   const count = (status: string) =>
     plan.rows.filter((planned) => planned.status === status).length;
