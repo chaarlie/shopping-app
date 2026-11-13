@@ -45,13 +45,13 @@ flowchart TD
 - **One transaction.** The import locks the products it matches, then inserts and updates them together.
 - **Idempotent.** Importing the same file again leaves every product `unchanged`.
 
-On the challenge CSV the result is 86 products created, 9 rows rejected and 2 blank rows skipped. A test checks this row by row: `backend/shop-api/src/products/import/plan-product-import.spec.ts`. Every problem row is listed in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
+On the sample CSV, [`backend/sample-data/products.csv`](../backend/sample-data/products.csv), the result is 86 products created, 9 rows rejected and 2 blank rows skipped. A test checks this row by row: `backend/shop-api/src/products/import/plan-product-import.spec.ts`. Every problem row is listed in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
 
 ## Decisions
 
-Each case below is a question a product owner would normally answer. With no one to ask during the challenge, the import takes the answer that loses the least information, and each one is easy to change.
+Each case below is a question a product owner would normally answer. Here the import takes the answer that loses the least information, and each one is easy to change.
 
-- **The same SKU on several rows with different values** (RS-001 and BS-021 in the example file). Every row of that SKU is rejected and listed in the report, so the import never guesses a price or a stock level. Fixing the file and importing it again is cheap, because the import is idempotent.
+- **The same SKU on several rows with different values** (RS-001 and BS-021 in the sample file). Every row of that SKU is rejected and listed in the report, so the import never guesses a price or a stock level. Fixing the file and importing it again is cheap, because the import is idempotent.
   - *Last row wins* is the main alternative: later rows would count as updates, and row 36's description starts with "Updated", which hints at it. A file has no timestamps, though, so row order is weak evidence for a price. Postgres takes the same position: an upsert that touches one key twice in a single statement fails.
   - *First row wins* and *let the admin pick a row in the import preview* were also considered.
   - To change it, edit `resolveRepeatedSkus` in [`plan-product-import.ts`](../backend/shop-api/src/products/import/plan-product-import.ts) and the golden test.
@@ -64,7 +64,7 @@ Each case below is a question a product owner would normally answer. With no one
 - **Names that contain markup or SQL.** They're stored exactly as written. Text like this is only dangerous when it's rendered as HTML or concatenated into SQL, so the protection belongs there: queries pass values as parameters, and the UI must render names as text. Stripping tags during the import would quietly change data.
 - **The same name under different SKUs** (Running Shoes is both RS-001 and RS-050). The SKU identifies a product, so they're separate products.
 
-A zero price is rejected because the brief asks for purchases, not a free-product flow. The alternative would accept free products and skip payment; that requires a separate checkout policy. Negative inventory is clamped to zero rather than rejecting an otherwise usable product, with the original shortfall retained in the import report.
+A zero price is rejected because every checkout takes a payment, and there is no free-product flow. The alternative would accept free products and skip payment; that requires a separate checkout policy. Negative inventory is clamped to zero rather than rejecting an otherwise usable product, with the original shortfall retained in the import report.
 
 ## Saved review portal
 
@@ -80,4 +80,4 @@ Replanning maps each parsed CSV record number back to its stored original row nu
 
 ### Editing feedback
 
-Import edits are serialized using the last acknowledged import version. Successful saves refresh the preview without clearing the mounted table, and editable cells keep stable keys and unsaved text. Each cell reports saving, saved or retry feedback. Rows that no longer match an active filter leave that filtered view. The Apply button uses explicit dark text on its light background.
+Import edits are serialized using the last acknowledged import version. Successful saves refresh the preview without clearing the mounted table, and editable cells keep stable keys and unsaved text. Each cell reports saving, saved or retry feedback. Rows that no longer match an active filter leave that filtered view.

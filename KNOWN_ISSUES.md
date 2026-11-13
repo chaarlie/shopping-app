@@ -1,10 +1,10 @@
 # Known issues
 
-This file lists the problems found in the example CSV and the known bugs and limitations of this solution. Each entry says what happens today.
+This file lists how the import handles each problem row in the sample CSV, and the known bugs and limitations of the project. Each entry says what happens today.
 
-## Problems in the example CSV
+## Problems in the sample CSV
 
-The example file has rows that look deliberately broken. The import handles each one as shown below, and [Product import](docs/product-import.md) explains the rules and the reasons behind them. Row numbers count the header as row 1, as a spreadsheet does, and [`plan-product-import.spec.ts`](backend/shop-api/src/products/import/plan-product-import.spec.ts) checks every row listed here.
+[`backend/sample-data/products.csv`](backend/sample-data/products.csv) has rows that are broken on purpose. The import handles each one as shown below, and [Product import](docs/product-import.md) explains the rules and the reasons behind them. Row numbers count the header as row 1, as a spreadsheet does, and [`plan-product-import.spec.ts`](backend/shop-api/src/products/import/plan-product-import.spec.ts) checks every row listed here.
 
 | Rows | SKU | Problem | Result |
 |---|---|---|---|
@@ -27,41 +27,37 @@ The example file has rows that look deliberately broken. The import handles each
 | 55, 68 | RS-050, BS-099 | Same names as RS-001 and BS-021 | Imported as separate products, because the SKU identifies a product |
 | 62, 63 | | Blank rows | Skipped and counted |
 
-That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. In the saved portal, correct or exclude rows before applying. Applied imports are immutable: further corrections require a new upload. Existing stock is preserved by default.
+That adds up to 86 products imported, 9 rows rejected and 2 blank rows skipped. In the saved review, correct or exclude rows before applying. Applied imports are read-only, so further corrections need a new upload. Existing stock is preserved by default.
 
 ## Known bugs and limitations
 
-- **Concrete payment implementation.** The payments API provides the unfinished command handler where the payment provider integration should be placed. For more information refer to justification at the [handler](https://github.com/chaarlie/shopping-app/blob/3f189c737431ef62479d5a3f4ebe2cac3d1a420a/backend/payments-api/src/payments/commands/handlers/create-payment-command.handler.ts#L31).
-- **Administrators must be provisioned before catalog writes.** Product mutations require a valid admin session. The saved import portal requires the same session.
-- **Concurrent catalog changes require a fresh import preview.** A duplicate SKU created during loading returns 409 and rolls back the whole import. Existing stock is preserved unless the admin explicitly opts into updating it.
+### Payments and orders
+
+- **Payments use a simulated provider.** payments-api picks each outcome from a published test card number and never contacts a bank. The note on [`CreatePaymentCommandHandler`](backend/payments-api/src/payments/commands/handlers/create-payment-command.handler.ts) describes what a real provider integration would change.
 - **Flagged payment events have no screen yet.** shop-api answers 200 for a webhook it records but can't apply, such as an amount that doesn't match its order or a second successful payment for an order that is already paid, so payments-api stops resending it. Those events are logged as errors and kept in `processed_payment_events` with the outcome `flagged` and the reason, and a person has to look them up there and refund or fix the order by hand.
 - **A guest order opens only in the browser that placed it.** The access token lives in an httpOnly cookie, and nothing sends the customer a link or an email, so clearing cookies or switching devices loses access to the order page. The order itself is unaffected.
+- **Cancelled orders with unresolved payment attempts stay in reconciliation.** They are checked again at most once a minute after a successful lookup, which favors recovering an unknown payment over abandoning it. A larger deployment would need a policy for how long to keep checking and when to investigate.
+- **Guest details are self-reported.** The admin orders view shows the name and email typed at checkout, not verified identities, and the time an order was placed, not when its payment settled.
+- **The storefront learns a new purchase quantity limit on reload.** The server always enforces the current `ORDER_MAX_QUANTITY_PER_PRODUCT` for new orders. Cart quantities above a lowered limit are kept and flagged rather than silently reduced. If the settings request fails, adding to the cart and checking out stay disabled until a retry succeeds.
+
+### Catalog and imports
+
+- **Catalog writes need a provisioned admin.** Product changes and the saved import review require an admin session, and there is no sign-up; see [Admin accounts](README.md#admin-accounts).
+- **Concurrent catalog changes require a fresh import preview.** Applying compares only the included SKUs and the fields the import would change, so stock-only sales don't block the default stock-preserving import. A relevant edit, a product deleted and recreated, or a SKU created by another write returns 409 and rolls back the whole import.
+- **Duplicate comparison covers the current page.** Difference highlights compare the rows on the page being viewed, and a large group of duplicates can span pages.
+- **A saved row can leave a filtered view.** After a save, a row that no longer matches the selected status or SKU filter disappears from the current view.
+- **Quarantined rows stay inside their import.** They're reachable through each import's "Needs attention" filter, not from a separate list.
+- **Object-storage imports are bounded.** They accept 5 MB by default, configurable up to 10 MB, and at most 20,000 records. Processing reads the bounded file in memory; it isn't a streaming pipeline for arbitrarily large files. Completed originals are kept until a retention policy is introduced. MinIO is built from pinned, archived upstream source for local use; a deployment should use a maintained S3 service.
+
+### Search
+
 - **Search matching lags product edits by about a second.** The indexer runs every second, so a renamed product is found under its new name a moment later. The price and stock a search shows are always current, because they are read back from Postgres.
 - **Search matches the start of words, not the middle.** `runn` finds Running Shoes and `unning` doesn't. Matching inside words would need full n-grams and a much larger index.
-- **A short search with a word no product has finds nothing.** Every word of a one- or two-word search has to be found, so `wireless headphones` finds nothing in the example catalog rather than listing the wireless products. There is no fallback to a looser search yet.
+- **A short search with a word no product has finds nothing.** Every word of a one- or two-word search has to be found, so `wireless headphones` finds nothing in the sample catalog rather than listing the wireless products. There is no fallback to a looser search yet.
 - **Search pages stop at the first 10,000 results,** OpenSearch's default window. Going further would need `search_after` paging.
 - **The search index isn't ready for a cluster yet.** It has no replicas, which suits the single local node, and OpenSearch runs without its security plugin. On Amazon OpenSearch Service, the index needs at least one replica and requests need HTTPS with SigV4 signing, which the client supports but which isn't wired up.
 
-- **Cancelled orders with unresolved attempts remain eligible for reconciliation.** They are rechecked no more than once per minute after a successful lookup; this favors recovery over silently abandoning an unknown payment. A larger deployment would need an explicit operational retention and investigation policy.
+### Configuration and operations
 
-- **Import review usability:** errors and actions are grouped together, with explicit duplicate labels and a needs-attention shortcut. Desktop and phone visual acceptance of this refinement remains with the user. Difference highlights compare rows on the current page; large duplicate groups may span pages.
-
-- **Admin orders:** guest names and email addresses are supplied at checkout, not verified identities. The page shows order placement time, not payment settlement time. Browser acceptance remains with the user. Quarantined import rows remain accessible through each import’s Needs attention filter; applied imports are read-only and corrections require another upload.
-
-- **Local configuration:** direct service ports require the debug Compose override and bind only to localhost. Custom hostnames require APP_ORIGIN. Database password variables initialize new volumes; they do not rotate existing roles.
-
-- **Admin provisioning:** YAML is an explicit account creation/replacement input, not continuous synchronization. Removing an entry does not delete the account. Existing accounts are skipped unless --replace-existing is supplied. Local password files are plaintext and must remain private; they are excluded from Git and image build contexts.
-
-- **Fixed import row mapping:** emptying an earlier staged row could shift later validation results and original quarantine checks to the wrong record. Replanning now maps by parsed row number. Previously applied imports are not rewritten; any history produced by the old behavior should be checked against its original file and the catalog.
-
-- Import edit refreshes now preserve the mounted table and draft text. A row may still leave the current view after a save if it no longer matches the selected status or SKU filter. Browser acceptance is pending.
-
-Import persistence now exposes named operations rather than arbitrary SQL to handlers. Both import entry points share the ProductImportWriter and versioned product repository. Preview results use one conditional batch update so unchanged rows are not rewritten.
-
-- Import conflicts now compare only included SKUs and relevant fields. Stock-only sales do not block the default stock-preserving import. Older preview fingerprints require a refresh. Relevant catalog edits, deletion/recreation and concurrent SKU creation still produce 409.
-
-The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
-
-- Object-storage imports are bounded to 5 MB by default, configurable to 10 MB and at most 20,000 records. Processing is bounded in memory, not an unbounded streaming ETL. Completed originals are retained until an explicit retention policy is introduced. MinIO is built from pinned archived upstream source for local use; use a maintained S3 service for deployment. Browser acceptance remains with the user.
-
-- Purchase quantity policy is configurable through ORDER_MAX_QUANTITY_PER_PRODUCT (default 100). Browser settings refresh on reload; the server always enforces the current policy for new orders. Existing cart quantities are preserved and flagged rather than silently reduced. Settings failures disable adding/checkout until retry succeeds.
+- **Direct service ports need the debug override.** They're published only with `docker-compose.debug.yml`, and only on localhost. Custom hostnames require `APP_ORIGIN`. Database password variables initialize new volumes; they don't rotate existing roles.
+- **Admin provisioning isn't a sync.** The YAML file creates or replaces accounts; removing an entry doesn't delete the account. Existing accounts are skipped unless `--replace-existing` is given. Local password files are plain text and must stay private; they're excluded from Git and from image build contexts.
