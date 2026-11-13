@@ -10,7 +10,7 @@ A product matches when its SKU starts with the search, or when every word of the
 - **a word in the name with a typo:** one letter wrong, missing or extra, or two letters swapped, in words of 4 to 7 letters, two typos in longer words, and none in shorter ones. `runing` finds Running Shoes;
 - **a word in the description:** `ergonomic` finds the Wireless Mouse.
 
-So `charging pad` finds the Wireless Charger, whose description has both words, and not the Mouse Pad, which has only one. The matches rank in this order, with examples from the challenge CSV:
+So `charging pad` finds the Wireless Charger, whose description has both words, and not the Mouse Pad, which has only one. The matches rank in this order, with examples from the sample CSV:
 
 | Match | Example |
 |---|---|

@@ -8,10 +8,8 @@ import { DataSource } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
 import { setupApp } from './../src/app.setup.js';
 
-const challengeCsv = readFileSync(
-  fileURLToPath(
-    new URL('../../Code Challenge E-Commerce.csv', import.meta.url),
-  ),
+const sampleCsv = readFileSync(
+  fileURLToPath(new URL('../../sample-data/products.csv', import.meta.url)),
   'utf8',
 );
 
@@ -52,8 +50,8 @@ describe('Product import (e2e)', () => {
         .count,
     );
 
-  it('previews the challenge CSV without writing anything', async () => {
-    const { body } = await upload(challengeCsv, '?dryRun=true').expect(200);
+  it('previews the sample CSV without writing anything', async () => {
+    const { body } = await upload(sampleCsv, '?dryRun=true').expect(200);
 
     expect(body).toMatchObject({
       dryRun: true,
@@ -71,8 +69,8 @@ describe('Product import (e2e)', () => {
     expect(await productCount()).toBe(0);
   });
 
-  it('imports the challenge CSV in one go', async () => {
-    const { body } = await upload(challengeCsv).expect(200);
+  it('imports the sample CSV in one go', async () => {
+    const { body } = await upload(sampleCsv).expect(200);
 
     expect(body.counts.create).toBe(86);
     expect(await productCount()).toBe(86);
@@ -84,9 +82,9 @@ describe('Product import (e2e)', () => {
   });
 
   it('changes nothing when the same file is imported again', async () => {
-    await upload(challengeCsv).expect(200);
+    await upload(sampleCsv).expect(200);
 
-    const { body } = await upload(challengeCsv).expect(200);
+    const { body } = await upload(sampleCsv).expect(200);
 
     expect(body.counts).toMatchObject({ create: 0, update: 0, unchanged: 86 });
     const [{ max }] = await dataSource.query(
@@ -96,8 +94,8 @@ describe('Product import (e2e)', () => {
   });
 
   it('updates products whose values changed', async () => {
-    await upload(challengeCsv).expect(200);
-    const changed = challengeCsv.replace(
+    await upload(sampleCsv).expect(200);
+    const changed = sampleCsv.replace(
       'Wireless Mouse,WM-042,Ergonomic wireless mouse with USB receiver,Electronics,$29.99,75,0.12',
       'Wireless Mouse,WM-042,Ergonomic wireless mouse with USB receiver,Electronics,27.50,60,0.12',
     );
@@ -112,11 +110,11 @@ describe('Product import (e2e)', () => {
   });
 
   it('does not replenish sold stock when a file is imported again', async () => {
-    await upload(challengeCsv).expect(200);
+    await upload(sampleCsv).expect(200);
     await dataSource.query(
       "UPDATE products SET stock=2,version=version+1 WHERE sku='WM-042'",
     );
-    await upload(challengeCsv).expect(200);
+    await upload(sampleCsv).expect(200);
     const [mouse] = await dataSource.query(
       "SELECT stock FROM products WHERE sku='WM-042'",
     );
@@ -124,8 +122,8 @@ describe('Product import (e2e)', () => {
   });
 
   it('keeps existing products when asked to skip them', async () => {
-    await upload(challengeCsv).expect(200);
-    const changed = challengeCsv.replace(',$29.99,75,', ',27.50,60,');
+    await upload(sampleCsv).expect(200);
+    const changed = sampleCsv.replace(',$29.99,75,', ',27.50,60,');
 
     const { body } = await upload(changed, '?onExisting=skip').expect(200);
 
@@ -137,7 +135,7 @@ describe('Product import (e2e)', () => {
   });
 
   it('reports why each rejected row was rejected', async () => {
-    const { body } = await upload(challengeCsv, '?dryRun=true').expect(200);
+    const { body } = await upload(sampleCsv, '?dryRun=true').expect(200);
     const yogaMat = body.rows.find((row: { row: number }) => row.row === 7);
 
     expect(yogaMat).toMatchObject({
@@ -148,9 +146,7 @@ describe('Product import (e2e)', () => {
   });
 
   it('rejects a request without a file', () => {
-    return adminRequest(app)
-      .post('/api/products/import')
-      .expect(400);
+    return adminRequest(app).post('/api/products/import').expect(400);
   });
 
   it('rejects a file without the expected columns', async () => {

@@ -1,14 +1,16 @@
 # Stockroom frontend
 
-Next.js route pages remain thin; feature components live under `src/app/components/{landing,catalog,checkout,admin}`. Shared browser utilities, typed API requests, cart storage and payment retry helpers live in `src/lib`. This follows the feature-oriented structure of Henrik's Apartments.
+Next.js route pages remain thin; feature components live under `src/app/components/{landing,catalog,checkout,admin}`. Shared browser utilities, typed API requests, cart storage and payment retry helpers live in `src/lib`.
 
-`src/app/globals.css` defines the Design D palette, semantic status colors, typography, spacing and radii. Inter Tight matches the mockup; `next/font/google` self-hosts it after downloading at build time. Offline builds would need a vendored licensed font.
+`src/app/globals.css` defines the palette, semantic status colors, typography, spacing and radii. The Inter Tight font is self-hosted through `next/font/google`, which downloads it at build time, so an offline build would need a vendored, licensed copy.
 
-The storefront uses real API data, category fallbacks, URL-based search/filter/sort/pagination, product details, cart and simulated checkout. Admin screens use a top navigation bar, product forms with version checks, and TanStack Table 9 editable import rows through typed table meta. Product names are always rendered as text.
+The storefront uses real API data, category fallback images, URL-based search/filter/sort/pagination, product details, cart and simulated checkout. Product cards on the home page and catalog offer an accessible cart-icon button that adds one unit without navigating. The shared cart enforces stock and quantity limits; the button disables when unavailable or at the limit and announces the result.
+
+Admin screens use a top navigation bar, product forms with version checks, and TanStack Table 9 editable import rows through typed table meta. Product names are always rendered as text.
 
 Run `pnpm --filter webapp dev --port 3107`. Development forwards `/api` to `SHOP_API_ORIGIN` (default `http://localhost:8080`); production uses nginx. Start the Docker stack first. Configure `APP_ORIGIN` on shop-api to include the frontend origin.
 
-`pnpm --filter webapp test` covers precise decimal conversion, cart persistence validation and payment key reuse. Full browser journeys and responsive layouts must also be checked. HTTP errors remain visible, edits reload on stale versions, and checkout retries preserve unknown outcomes.
+`pnpm --filter webapp test` covers precise decimal conversion, cart persistence validation and payment key reuse. HTTP errors remain visible, edits reload on stale versions, and checkout retries preserve unknown outcomes.
 
 ## Component boundaries
 
@@ -20,6 +22,6 @@ Run `pnpm --filter webapp dev --port 3107`. Development forwards `/api` to `SHOP
 - `ui` contains reusable HTML primitives. `Button` preserves native props and refs, defaults to `type="button"`, and uses existing design-token classes; form submissions explicitly opt into `type="submit"`. Links remain links.
 - Shared `lib` contains transport, formatting, persistence and input conversion; it does not own page markup.
 
-Manual acceptance checks (user-owned): create/edit/delete a product, duplicate SKU correction, stale edit reload, import edits/exclusions and history, category/search/pagination, empty/error states, and desktop/phone layouts. The browser pass already confirmed sign-in, challenge CSV import, exact SKU search, cart, decline and successful retry. No further automated browser interaction is required by the user.
+## Manual checks
 
-Product cards on the home page and catalog offer an accessible cart-icon button that adds one unit without navigating. The shared cart enforces stock and quantity limits; the button disables when unavailable or at the limit and announces the result.
+The automated tests don't drive a browser. Before a release, check these journeys at desktop and phone widths: sign-in, CSV import with edits, exclusions and history, create/edit/delete a product, duplicate SKU correction, stale edit reload, category/search/pagination, empty and error states, cart, a declined card and a successful retry.

@@ -2,7 +2,7 @@
 
 The default maximum is **5,000,000 bytes (5 MB)**. Set `IMPORT_MAX_FILE_BYTES=10000000` in `.env` to allow up to **10 MB**. Startup validation rejects values above 10 MB. `IMPORT_MAX_ROWS` defaults to 5,000 data records and cannot exceed 20,000. The API supplies limits to the browser; it remains the enforcement boundary.
 
-This replaces the proposed 5 GB scope. At these bounded sizes, keep the existing atomic review/apply behavior rather than exposing partially applied imports. The legacy direct upload endpoint remains limited to 1 MB. The admin upload screen discovers the server limits, uploads directly to object storage and waits for the saved preview.
+At these bounded sizes the import keeps the atomic review and apply rather than exposing partially applied imports. The direct upload endpoint remains limited to 1 MB. The admin upload screen discovers the server limits, uploads directly to object storage and waits for the saved preview.
 
 ## Run locally
 
@@ -24,7 +24,7 @@ Storage network calls run outside database transactions through explicit `Propag
 
 MinIO is a local S3-compatible test service. Its public repositories are archived and former Docker images are unavailable, so the Dockerfile builds pinned official source revisions. The initial build needs internet access and is slower. Local credentials live only in Compose defaults. Do not use these credentials outside local development. MinIO is AGPL-3.0; see the upstream license when redistributing it.
 
-For AWS, retain the multipart API and browser flow, configure the bucket/region/CORS, use an IAM role instead of static credentials, select standard S3 addressing, and configure an incomplete-multipart lifecycle rule. The current adapter is configured for local path-style storage; AWS deployment is not part of this change.
+For AWS, retain the multipart API and browser flow, configure the bucket/region/CORS, use an IAM role instead of static credentials, select standard S3 addressing, and configure an incomplete-multipart lifecycle rule. The current adapter is configured for local path-style storage.
 
 ## Validation
 
@@ -36,7 +36,7 @@ With MinIO running:
 pnpm --filter shop-api exec vitest run --config vitest.config.storage.ts
 ```
 
-These tests perform real presigned PUTs, retry a part, complete and stream the object, reject anonymous reads, and abort unfinished uploads. Processing tests stage and apply catalogs of exactly 5 MB and 10 MB, recover expired leases, fence old workers, reject excessive record counts, and clean expired uploads. Manual browser acceptance is delegated to the user. No 5 GB support is claimed.
+These tests perform real presigned PUTs, retry a part, complete and stream the object, reject anonymous reads, and abort unfinished uploads. Processing tests stage and apply catalogs of exactly 5 MB and 10 MB, recover expired leases, fence old workers, reject excessive record counts, and clean expired uploads.
 
 ## References
 
@@ -54,6 +54,6 @@ Apply retains a single transaction and existing stock-preservation, duplicate re
 
 ## Browser behavior
 
-Part failures retry up to three times with a fresh URL. The progress message distinguishes uploading from preparing the preview. A saved upload ID in session storage lets Resume saved upload recover processing after a refresh in the same tab. Retry upload resends parts from the selected original file. Cancel upload is available before processing; Stop waiting during processing does not cancel the server job. Once ready, the normal review screen opens. With the storage override disabled, the screen keeps the legacy 1 MB upload path.
+Part failures retry up to three times with a fresh URL. The progress message distinguishes uploading from preparing the preview. A saved upload ID in session storage lets Resume saved upload recover processing after a refresh in the same tab. Retry upload resends parts from the selected original file. Cancel upload is available before processing; Stop waiting during processing does not cancel the server job. Once ready, the normal review screen opens. With the storage override disabled, the screen keeps the direct 1 MB upload path.
 
-To test the extension, set `IMPORT_MAX_FILE_BYTES=10000000` in `.env`, start the imports Compose configuration, and use a CSV above 1 MB. Check upload progress, preview, apply, original download, reload/resume and configured-limit rejection.
+To try it, set `IMPORT_MAX_FILE_BYTES=10000000` in `.env`, start the imports Compose configuration, and use a CSV above 1 MB. Check upload progress, preview, apply, original download, reload/resume and configured-limit rejection.

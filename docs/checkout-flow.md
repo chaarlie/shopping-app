@@ -1,8 +1,6 @@
 # Checkout flow
 
-This is the design the checkout is being built to, and this page changes in the same commits as the code.
-
-**Status:** everything on this page is built in shop-api and payments-api, and [What the design guarantees](#what-the-design-guarantees) lists the test that proves each guarantee. The webapp includes cart, checkout and live order-status screens.
+This page describes how checkout works, and it changes in the same commits as the code. Everything on it is built in shop-api and payments-api, and [What the design guarantees](#what-the-design-guarantees) lists the test that proves each guarantee. The webapp provides the cart, checkout and live order-status screens.
 
 payments-api plays the part of a payment gateway, and shop-api is the merchant. Requests go one way: shop-api asks payments-api to charge a card. Results come back the other way as signed webhooks, which is how gateways such as Stripe and Adyen report payments to merchants.
 
@@ -116,6 +114,7 @@ sequenceDiagram
 - **Every instance hears every change,** and passes it only to the streams for that order. Nothing is broadcast to every browser or replayed from memory.
 - **The notification carries only the order reference.** The stream reads the order from the database, so a reconnect or a missed notification fixes itself on the next read. If the `LISTEN` connection drops, the instance reconnects and reads the order again for every open stream.
 - **nginx doesn't buffer the stream.** If the stream can't connect, the browser polls `GET /api/orders/:reference` instead.
+- **The browser stops polling once an order is paid or refunded.** It keeps the native `EventSource` reconnection after transport errors and polls only while disconnected. A cancelled order with an unresolved payment keeps updating, because a late payment may still need fulfilling or refunding.
 
 ## 4. When no result arrives
 
@@ -161,7 +160,7 @@ sequenceDiagram
 - **A lost webhook costs about a minute.** The job checks payments that have been processing for over a minute, not only orders that are due.
 - **A crash between saving the order and calling payments-api** ends here too: no payment is found, so the order is cancelled when it's due and its stock returned.
 - **A refund is retried with the same key until payments-api confirms it,** so a customer is never refunded twice.
-- **One gap remains.** If a payment succeeds after its order was cancelled and all three deliveries of its webhook fail, shop-api never hears of it, because the job only checks pending orders. It's rare, and it needs a manual refund.
+- **A late success is found even when every webhook is lost.** The job also checks cancelled orders whose payment attempts are still requested or processing. A late success follows the same policy as the webhook path: take the stock again in the order's transaction, or move to `refund_pending` if it's gone. A successful lookup defers that order's next check by a minute, so a batch of unresolved cancellations can't crowd out other orders. `reconciliation.e2e-spec.ts` covers lost late successes, stock that was sold meanwhile, repeated runs and the deferral.
 
 ## Order states
 
@@ -184,7 +183,7 @@ stateDiagram-v2
 
 - **No overselling.** Taking the stock and creating the order happen in one transaction in shop-api, and the stock is taken only if enough is left.
 - **No double charge.** A repeated request reuses its Idempotency-Key and gets the first answer, and payments-api allows one processing or succeeded payment per order, whatever the key.
-- **No lost or repeated results, with one exception.** payments-api saves each result and its webhook event in one transaction and tries three times to deliver it. shop-api answers only after its own transaction commits and drops repeats by event id, and the reconciliation job settles pending orders whose webhook never arrived. The exception is a late payment for a cancelled order whose three deliveries all fail (section 4).
+- **No lost or repeated results.** payments-api saves each result and its webhook event in one transaction and tries three times to deliver it. shop-api answers only after its own transaction commits and drops repeats by event id, and the reconciliation job settles orders whose webhook never arrived, including late payments for cancelled orders (section 4).
 - **No forged results.** shop-api applies a result only with a valid signature and a recent timestamp, on a route nginx never forwards.
 - **No stuck orders.** The reconciliation job asks payments-api before cancelling, and a payment that succeeds after cancellation gets its stock back or is refunded.
 - **The browser never sets the amount.** shop-api prices the cart from the database. payments-api accepts only calls that carry the service key, and it is reachable only inside the Docker network.
@@ -209,18 +208,11 @@ Each guarantee has a test that was seen failing against a broken version of the 
   - *RabbitMQ between the services* was the first design. It holds events while shop-api is down, but the outbox already does that. It adds a service to run locally and on AWS, and it redelivers a failed message straight away, so waiting between retries needs extra queues.
   - *shop-api polling payments-api* is simpler still, but results arrive late and every pending order costs a request. The reconciliation job keeps a version of it as the safety net.
 - **One Idempotency-Key per payment attempt, not per order.** A key per order would make the first decline permanent, because every retry would replay it. payments-api still allows one processing or succeeded payment per order, whatever the key, so a new key can't charge twice.
-- **Three delivery attempts, not days of retries.** Most failures are short, and the reconciliation job finds whatever the retries miss within about a minute. *Retrying for up to three days, as Stripe does,* would only help the rare late payment for a cancelled order.
+- **Three delivery attempts, not days of retries.** Most failures are short, and the reconciliation job finds whatever the retries miss within about a minute. *Retrying for up to three days, as Stripe does,* would add little, because the job also finds late payments for cancelled orders.
 - **The access token travels in an httpOnly cookie.** The browser's `EventSource` can't send headers, and a cookie is sent by itself and can't be read by page scripts. *A token in the URL* was the alternative, but URLs end up in logs and browser history.
 - **The access token is an HMAC of the order reference, made with a server secret.** shop-api stores nothing it would have to keep secret, and a repeated checkout request gets the same token back, so a double click can't leave the browser holding a token that no longer works. The cost is that a token can't be revoked without changing the secret, which is acceptable for guest orders.
 - **One receiver, set in config.** Real gateways let merchants register their own webhook endpoints, but there is only one merchant here.
 
-### Webhook retry test timing
+### Testing jobs that depend on time
 
-The sender marks an event dead after three failed deliveries. Its e2e test asserts each claimed delivery, checks that attempts one and two remain live, and checks that attempt three marks the event dead. Test fixtures explicitly make settlement due using the database clock and webhook delivery due using the application clock. Mixing Postgres `now()` precision with JavaScript millisecond timestamps previously allowed a loop iteration to claim nothing. A regression test holds the application clock behind the database clock to reproduce that boundary without sleeps.
-
-Payment settlement e2e fixtures explicitly set processing payments due using the database clock before running the worker. A test holds the application clock one minute ahead, preventing host/container clock differences from skipping settlement and causing unrelated listing/refund assertions to fail. Production settlement scheduling is unchanged.
-## Recovery after cancellation
-
-The reconciliation query also selects cancelled orders with unresolved requested/processing attempts. A successful lookup defers their next check by one minute so a batch of unresolved cancellations cannot permanently crowd out other orders. A late success uses the same policy as the webhook path: reserve stock again in the order transaction, or move to refund_pending if it is unavailable. Refunds still happen outside database transactions and use the payment ID as the idempotency key. The reconciliation e2e suite covers lost late successes, unavailable stock, repeated execution and deferred retry eligibility.
-
-The browser stops order polling after paid/refunded outcomes, retains native EventSource reconnection after transport errors, and uses polling only while disconnected. Cancelled orders with unresolved requested/processing payments continue to update because a late payment may still require fulfillment or refund.
+The sender marks an event dead after three failed deliveries. Its e2e test checks every claimed delivery, that attempts one and two stay live, and that attempt three marks the event dead. Fixtures make settlement due by the database clock and webhook delivery due by the application clock, because mixing Postgres `now()` with JavaScript millisecond timestamps can leave a loop iteration with nothing to claim. Regression tests hold the application clock behind the database clock, and one minute ahead of it, to reproduce those boundaries and host/container clock differences without sleeps.

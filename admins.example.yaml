@@ -1,4 +1,4 @@
 admins:
-  - name: Reviewer
-    email: reviewer@example.test
-    passwordEnv: REVIEWER_ADMIN_PASSWORD
+  - name: Store Admin
+    email: admin@example.test
+    passwordEnv: STORE_ADMIN_PASSWORD

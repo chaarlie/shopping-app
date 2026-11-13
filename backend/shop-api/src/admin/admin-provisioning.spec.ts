@@ -1,30 +1,30 @@
 import { parseAdmins } from './admin-provisioning.js';
 const manifest =
-  'admins:\n  - name: Reviewer\n    email: REVIEWER@example.com\n    passwordEnv: REVIEWER_PASSWORD\n';
+  'admins:\n  - name: Store Admin\n    email: ADMIN@example.com\n    passwordEnv: STORE_ADMIN_PASSWORD\n';
 describe('admin provisioning input', () => {
   it('normalizes emails and resolves passwords from environment references', () => {
     expect(
-      parseAdmins(manifest, { REVIEWER_PASSWORD: 'long-local-password' }),
+      parseAdmins(manifest, { STORE_ADMIN_PASSWORD: 'long-local-password' }),
     ).toEqual([
       {
-        name: 'Reviewer',
-        email: 'reviewer@example.com',
+        name: 'Store Admin',
+        email: 'admin@example.com',
         password: 'long-local-password',
       },
     ]);
   });
   it('rejects missing or weak passwords before opening the database', () => {
-    expect(() => parseAdmins(manifest, {})).toThrow('REVIEWER_PASSWORD');
-    expect(() => parseAdmins(manifest, { REVIEWER_PASSWORD: 'short' })).toThrow(
-      '12–256',
-    );
+    expect(() => parseAdmins(manifest, {})).toThrow('STORE_ADMIN_PASSWORD');
+    expect(() =>
+      parseAdmins(manifest, { STORE_ADMIN_PASSWORD: 'short' }),
+    ).toThrow('12–256');
   });
   it('rejects duplicate normalized emails, unknown fields and inline passwords', () => {
-    const env = { REVIEWER_PASSWORD: 'long-local-password' };
+    const env = { STORE_ADMIN_PASSWORD: 'long-local-password' };
     expect(() =>
       parseAdmins(
         manifest +
-          '  - name: Other\n    email: reviewer@example.com\n    passwordEnv: REVIEWER_PASSWORD\n',
+          '  - name: Other\n    email: admin@example.com\n    passwordEnv: STORE_ADMIN_PASSWORD\n',
         env,
       ),
     ).toThrow('unique');

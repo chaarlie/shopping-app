@@ -26,49 +26,29 @@ export class CreatePaymentCommandHandler implements ICommandHandler<CreatePaymen
       infer: true,
     });
   }
-  /**
-   *
-   * This demo payment implementation creates payment record using a simulated provider;
-   * it does not contact a bank, verify ownership of a real card, or check an actual
-   * account balance. In a prod scenario the input validation should reject malformed
-   * card details and expired cards before this handler runs.
-   * Format checks, including a Luhn checksum, can detect typing mistakes
-   * but cannot establish that a card is valid or
-   * that sufficient funds are available. Here, authorizeTestCard selects a
-   * simulated outcome from the supplied test card number.
-   *
-   * A production integration should collect card details through the payment
-   * provider's hosted fields and receive a payment token. The provider and
-   * issuing bank handle card verification, available funds or credit, fraud
-   * checks, and any required customer authentication. Authorization reserves
-   * funds; capture completes the charge, so a successful authorization must not
-   * automatically be treated as a captured payment.
-   *
-   * amountCents represents USD in integer cents: $19.99 is stored as 1999.
-   * TypeScript's number type does not guarantee integer or safe arithmetic,
-   * so runtime validation must enforce positive safe integers and application
-   * amount limits. Validate calculated totals as well as individual amounts,
-   * and convert decimal input without relying on floating-point multiplication.
-   * Store amounts in an appropriately bounded integer database column; use
-   * bigint or a decimal library if the supported range exceeds safe integers.
-   * Always obtain payable totals from trusted server-side order data.
-   *
-   * The idempotency key and request hash allow an identical request to return
-   * its existing payment while rejecting reuse with different request data.
-   * Database uniqueness constraints also protect against concurrent requests
-   * and multiple active payments for the same order. The transaction keeps
-   * local database changes atomic, but it cannot make an external provider
-   * request atomic with those changes.
-   *
-   * Real provider calls must therefore happen outside this transaction, using
-   * a durable payment attempt and a stable provider idempotency key. A timeout
-   * leaves the outcome unknown: retry or reconcile the same attempt instead of
-   * creating another charge. Persist confirmed outcomes and outgoing events
-   * atomically, then deliver signed webhooks through the outbox.
-   * @param param0
-   * @returns
-   */
 
+  /**
+   * Records a payment against a simulated card provider. No bank is
+   * contacted: the shared contract accepts only the published test cards,
+   * and authorizeTestCard picks the outcome from the card number, so card
+   * ownership, funds and fraud are never checked.
+   *
+   * A real integration would collect the card through the provider's hosted
+   * fields and receive a token instead of a card number. The provider and the
+   * issuing bank then handle verification, funds, fraud checks and customer
+   * authentication. An authorization only reserves funds and a capture
+   * completes the charge, so the two would be tracked as separate states.
+   *
+   * The same idempotency key with the same request hash returns the existing
+   * payment, and a reused key with different data is refused. The unique
+   * indexes keep both rules, and the one-active-payment-per-order rule, true
+   * under concurrent requests.
+   *
+   * The transaction covers only local writes. A real provider call would
+   * happen outside it, from a saved attempt with a stable idempotency key, so
+   * a timeout is retried or reconciled as the same attempt and never becomes
+   * a second charge.
+   */
   @Transactional()
   async execute({
     input,
