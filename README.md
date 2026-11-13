@@ -126,23 +126,23 @@ Existing Compose settings also accept `SHOP_DB_PASSWORD`, `PAYMENTS_DB_PASSWORD`
 
 ### Provision named admins from YAML
 
-Provisioning is explicit and never runs during normal application startup. After building the application, copy `admins.example.yaml` to `admins.local.yaml`. Add up to 100 accounts with `name`, `email` and `passwordEnv`. Create `admins.local.env` with a corresponding entry such as `REVIEWER_ADMIN_PASSWORD=your-chosen-long-password` (12–256 characters). Choose your own password; the example is not a preconfigured account. Both local files are ignored by Git and excluded from Docker builds. Restrict file access with `chmod 600 admins.local.yaml admins.local.env`.
+Provisioning is explicit and never runs during normal application startup. After building the application, copy `admins.example.yaml` to `admins.local.yaml`. Add up to 100 accounts with `name`, `email` and `passwordEnv`. Create `admins.local.env` with a corresponding entry such as `STORE_ADMIN_PASSWORD=your-chosen-long-password` (12–256 characters). Choose your own password; the example is not a preconfigured account. Both local files are ignored by Git and excluded from Docker builds. Restrict file access with `chmod 600 admins.local.yaml admins.local.env`.
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.admin.yml run --build --rm admin-provision
 ```
 
-Alternatively, pass the password from your terminal instead of storing it in the environment file. Keep `passwordEnv: REVIEWER_ADMIN_PASSWORD` in `admins.local.yaml`. The Compose configuration still requires `admins.local.env` to exist; `touch` creates it if missing without overwriting an existing file.
+Alternatively, pass the password from your terminal instead of storing it in the environment file. Keep `passwordEnv: STORE_ADMIN_PASSWORD` in `admins.local.yaml`. The Compose configuration still requires `admins.local.env` to exist; `touch` creates it if missing without overwriting an existing file.
 
 ```sh
 touch admins.local.env
 chmod 600 admins.local.yaml admins.local.env
-export REVIEWER_ADMIN_PASSWORD='your-chosen-long-password'
+export STORE_ADMIN_PASSWORD='your-chosen-long-password'
 
 docker compose -f docker-compose.yml -f docker-compose.admin.yml \
-  run --build --rm -e REVIEWER_ADMIN_PASSWORD admin-provision
+  run --build --rm -e STORE_ADMIN_PASSWORD admin-provision
 
-unset REVIEWER_ADMIN_PASSWORD
+unset STORE_ADMIN_PASSWORD
 ```
 
 Choose a password of 12–256 characters. The explicit `-e` forwards the exported variable into the provisioning container and overrides that variable from `admins.local.env`. For multiple password variables, export each one and repeat `-e VARIABLE_NAME`. A literal password typed into a command may remain in your shell history; `unset` only removes it from the current shell environment.
